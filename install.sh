@@ -42,12 +42,12 @@ while getopts ":nvhdpu:" c; do
 	case $c in
 		d) 
 			[ "$INSTALL" = PACKAGES ] && exclusive '-p' '-d'	
-			MAXPHASE=$(($MAXPHASE-1))
+			MAXPHASE=$((MAXPHASE-1))
 			set_var INSTALL DOTFILES "-d" ;;
 		p) 
 			[ "$INSTALL" = DOTFILES ] && exclusive '-p' '-d'
 			[ -n "$INSTALLUSER" ] && exclusive '-p' '<user>'
-			MAXPHASE=$(($MAXPHASE-1))
+			MAXPHASE=$((MAXPHASE-1))
 			set_var INSTALL PACKAGES "-p" ;;
 		u) 
 			[ "$INSTALL" = PACKAGES ] && exclusive '-p' '<user>'	
@@ -95,7 +95,61 @@ fi
 
 printphase() {
 	echo -e "${BOLD}${YELLOW}[$CURPHASE/$MAXPHASE] $1 phase${NC}${NORM}"
-	CURPHASE=$(($CURPHASE+1))
+	CURPHASE=$((CURPHASE+1))
+}
+
+install_aur() {
+	dir="$HOMEDIR/$1"
+	echo -n "Installing $1... "
+	sudo -u "$1" git clone -q "https://aur.archlinux.org/$1.git" "$dir" 2>&1 > /dev/null
+	pushd "$dir"
+	sudo -u "$1" makepkg -si --noconfirm 2>&1 > /dev/null
+	popd
+	rm -rf "$1"
+	echo "done"
+}
+
+remove() {
+	echo -n "Removing $1..."
+	set +e
+	pacman -Rs --noconfirm $1 2>&1 > /dev/null
+	set -e
+	echo "done"
+}
+
+install() {
+	echo -n "Installing $1..."
+	pacman -Sq --needed --noconfirm $1 2>&1 > /dev/null
+	echo "done"
+}
+
+prompt() {
+	[ $NOCONFIRM ] && return true
+	echo -n "$1 [Y/n]"
+	read ans
+	case $ans in
+		n|N) return false ;;
+		*) return true ;;
+	esac
+}
+
+install_doas() {
+	#install_aur requires sudo or doas
+	[ ! $(prompt "Do you want to install doas (will remove sudo if installed)?") ] && return
+	install sudo
+	install_aur doas
+	remove sudo
+	echo -n "Adding sudo to IgnorePkg..."
+	sed 's/^#*\(IgnorePkg[[:blank:]]*=[[:blank:]]*.*\)/\1 sudo/' /etc/pacman.conf -i
+	echo "done"
+	echo -n "Linking /bin/sudo to /bin/doas... "
+	ln -s /bin/doas /bin/sudo
+	echo "done"
+	echo -n "Configuring doas... "
+	echo "permit persist $INSTALLUSER as root" >> /etc/doas.conf
+	echo "permit nopass $INSTALLUSER as root cmd pacman args -Syu" >> /etc/doas.conf
+	echo "permit nopass $INSTALLUSER as root cmd pacman args -Syyu" >> /etc/doas.conf
+	echo "done"
 }
 
 # PACKAGES
@@ -103,6 +157,10 @@ if [ "$INSTALL" != "DOTFILES" ]; then
 	printphase "Package installation"
 	
 	echo -n "Upgrading system... "
-	_DUMMY=$(pacman -Sqyu --noconfirm 2>&1 > /dev/null)
+	pacman -Sqyu --noconfirm 2>&1 > /dev/null
 	echo "done"
+
+	install_doas
+
+	install_aur yay
 fi
