@@ -133,20 +133,65 @@ prompt() {
 	esac
 }
 
+pacman_conf() {
+	echo -n "Adding $2 to $1 (/etc/pacman.conf)..."
+	awk '$0 ~ /^'$1'[[:blank:]]+=.*[[:blank:]]'$2'[[:blank:]].*/ { exit 0 }' /etc/pacman.conf
+	if [ $? = 0 ]; then
+		awk '$0 ~ /^'$1'[[:blank:]]+=.*/ { exit 1 }' /etc/pacman.conf
+		if [ $? = 1 ]; then
+			awk '
+			BEGIN { todo = 1 }
+			{
+				if ($0 ~ /^'$1'[[:blank:]]+=.*/ && todo)
+				{
+					$(NF+1) = "'$2'"
+					todo = 0
+				}
+				print $0 
+			}' \
+			/etc/pacman.conf > /tmp/pacman.conf
+			mv /tmp/pacman.conf /etc/pacman.conf
+		else
+			awk '$0 ~ /^#'$1'[[:blank:]]+=[[:blank:]]*$/ { exit 1 } ' /etc/pacman.conf
+			if [ $? = 1 ]; then
+				awk '
+				BEGIN { todo = 1 }
+				{
+					if ($0 ~ /^#'$1'[[:blank:]]+=[[:blank:]]*$/ && todo)
+					{
+						$1 = "'$1'"
+						$(NF+1) = "'$2'"
+						todo = 0
+					}
+					print $0
+				}' \
+				/etc/pacman.conf > /tmp/pacman.conf
+				mv /tmp/pacman.conf /etc/pacman.conf
+			else
+				echo "'$1' = $2" >> /etc/pacman.conf
+			fi
+		fi
+	fi
+	echo "done"
+}
+
+link() {
+	echo -n "Linking $2 to $1... "
+	ln -sf $1 $2
+	echo "done"
+}
+
 install_doas() {
 	#install_aur requires sudo or doas
 	[ ! $(prompt "Do you want to install doas (will remove sudo if installed)?") ] && return
 	install sudo
 	install_aur doas
 	remove sudo
-	echo -n "Adding sudo to IgnorePkg..."
-	sed 's/^#*\(IgnorePkg[[:blank:]]*=[[:blank:]]*.*\)/\1 sudo/' /etc/pacman.conf -i
-	echo "done"
-	echo -n "Linking /bin/sudo to /bin/doas... "
-	ln -s /bin/doas /bin/sudo
-	echo "done"
+	pacman_conf IgnorePkg sudo
+	pacman_conf NoUpgrade sudo
+	link /bin/doas /bin/sudo
 	echo -n "Configuring doas... "
-	echo "permit persist $INSTALLUSER as root" >> /etc/doas.conf
+	echo "permit persist $INSTALLUSER as root" > /etc/doas.conf
 	echo "permit nopass $INSTALLUSER as root cmd pacman args -Syu" >> /etc/doas.conf
 	echo "permit nopass $INSTALLUSER as root cmd pacman args -Syyu" >> /etc/doas.conf
 	echo "done"
