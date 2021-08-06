@@ -8,15 +8,36 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 BOLD=$(tput bold)
 NORM=$(tput sgr0)
+readonly RED
+readonly LGREEN
+readonly YELLOW
+readonly NC
+readonly BOLD
+readonly NORM
 
 ### VARS ###
-CURPHASE=1
-MAXPHASE=2
+CUR_PHASE=1
+MAX_PHASE=2
+readonly MAX_PHASE
+
+### DISTRO ###
+PACMAN_PATH="/etc/pacman.conf"
+PACMAN_TEMP_PATH="/tmp/pacman.conf"
+DISTRO=$(lsb_release -is)
+DEFAULT_INCLUDE='/etc/pacman.d/mirrorlist'
+if [ "$DISTRO" != "Arch" -a "$DISTRO" != "Artix" ]; then
+	echo "Error: $(lsb_release -ds) not supported"
+	usage
+fi
+readonly PACMAN_PATH
+readonly PACMAN_TEMP_PATH
+readonly DISTRO
+readonly DEFAULT_INCLUDE
 
 ### OPTIONS AND PARAMETERS ###
 
 usage() {
-	printf "Usage: $0 [-nhv] (-p | [-d] <user>)\n  -p: Install packages only\n  -d: Install dotfiles only\n  -h: Display this message\n  -n: Do not prompt for confirmation\n  -v: Verbose output\n  user: User that the dotfiles should be installed to\n"
+	printf "Usage: $0 [-nhv] (-p | [-d] -u <user>)\n  -p: Install packages only\n  -d: Install dotfiles only\n  -h: Display this message\n  -n: Non-interactive mode\n  -v: Verbose output\n  -u <user>: User that the dotfiles should be installed to\n"
 	exit 2
 }
 
@@ -41,18 +62,18 @@ exclusive()
 while getopts ":nvhdpu:" c; do
 	case $c in
 		d) 
-			[ "$INSTALL" = PACKAGES ] && exclusive '-p' '-d'	
-			MAXPHASE=$((MAXPHASE-1))
+			[ "$INSTALL" = "PACKAGES" ] && exclusive '-p' '-d'	
+			MAX_PHASE=$((MAX_PHASE-1))
 			set_var INSTALL DOTFILES "-d" ;;
 		p) 
-			[ "$INSTALL" = DOTFILES ] && exclusive '-p' '-d'
+			[ "$INSTALL" = "DOTFILES" ] && exclusive '-p' '-d'
 			[ -n "$INSTALLUSER" ] && exclusive '-p' '<user>'
-			MAXPHASE=$((MAXPHASE-1))
+			MAX_PHASE=$((MAX_PHASE-1))
 			set_var INSTALL PACKAGES "-p" ;;
 		u) 
-			[ "$INSTALL" = PACKAGES ] && exclusive '-p' '<user>'	
+			[ "$INSTALL" = "PACKAGES" ] && exclusive '-p' '<user>'	
 			set_var INSTALLUSER $OPTARG "-u" ;;
-		n) NOCONFIRM=true ;;
+		n) NO_CONFIRM=true ;;
 		v) VERBOSE=true ;;
 		h) usage ;;
 		?) echo "Unknown option -$OPTARG"; usage ;;
@@ -77,12 +98,12 @@ fi
 
 ### ASK FOR CONFIRMATION ###
 
-if [ ! $NOCONFIRM ]; then
+if [ ! $NO_CONFIRM ]; then
 	echo "${BOLD}Please confirm operation:${NORM}"
 	echo -ne "Installing ${LGREEN}${INSTALL@L}${NC}"
 	[ -n "$INSTALLUSER" ] && echo -ne " for ${LGREEN}$INSTALLUSER ($HOMEDIR)${NC}"
 	printf "\n"
-	echo -n "Continue installation? [y/N] "
+	echo -n "Proceed with installation? [y/N] "
 	read ans
 	case $ans in
 		y|Y) break ;;
@@ -94,8 +115,8 @@ fi
 [ $VERBOSE ] && set -x
 
 printphase() {
-	echo -e "${BOLD}${YELLOW}[$CURPHASE/$MAXPHASE] $1 phase${NC}${NORM}"
-	CURPHASE=$((CURPHASE+1))
+	echo -e "${BOLD}${YELLOW}[$CUR_PHASE/$MAX_PHASE] $1 phase${NC}${NORM}"
+	CUR_PHASE=$((CUR_PHASE+1))
 }
 
 install_aur() {
@@ -124,7 +145,7 @@ install() {
 }
 
 prompt() {
-	[ $NOCONFIRM ] && return true
+	[ $NO_CONFIRM -eq 1 ] && return true
 	echo -n "$1 [Y/n]"
 	read ans
 	case $ans in
@@ -133,45 +154,169 @@ prompt() {
 	esac
 }
 
-pacman_conf() {
-	echo -n "Adding $2 to $1 (/etc/pacman.conf)..."
-	awk '$0 ~ /^'$1'[[:blank:]]+=.*[[:blank:]]'$2'[[:blank:]].*/ { exit 0 }' /etc/pacman.conf
-	if [ $? = 0 ]; then
-		awk '$0 ~ /^'$1'[[:blank:]]+=.*/ { exit 1 }' /etc/pacman.conf
-		if [ $? = 1 ]; then
+pacman_config() {
+	local LABEL=$1
+	local OPTION=$2
+	local VALUE=$3
+	local APPEND=${4:-0} #int
+	local LOW_PRIORITY=${5:-0} #int
+	local VALUE_ESCAPE=$(echo $VALUE | sed 's/\//\\\//g')
+
+# 1st script
+#	if(there is [LABEL] uncommented):
+#		if(there is OPTION uncommented):
+#			if(VALUE != CURRENT_VALUE):
+#				if(APPEND):
+#					append(VALUE);
+#				else:
+#					substitute(CURRENT_VALUE,VALUE);
+# 2nd script
+#		else if(there is OPTION = VALUE commented):
+#			uncomment(OPTION = VALUE);
+# 3rd script
+#	else if(there is [LABEL] commented):
+#		uncomment(LABEL);
+#		if(there is OPTION = VALUE commented):
+#			uncomment(OPTION = VALUE);
+#		else:
+#			append(OPTION = VALUE);
+# 4th script
+#	else:
+#		append([LABEL]);
+#		append(OPTION = VALUE);
+
+	set +e
+	awk '
+	BEGIN { todo = 1 }
+	{ if ($0 ~ /^\['$LABEL'\][[:blank:]]*$/) {
+		print $0
+
+		while(1) {
+			hasline = getline
+			if (!hasline || $0 ~ /^\[.*\][[:blank:]]*$/) {
+				break
+			}
+			else if ($0 ~ /^'$OPTION'[[:blank:]]+=.*/) {
+				todo = 0
+				if ($0 !~ /[[:blank:]]'$VALUE_ESCAPE'/) {
+					if('$APPEND') {$(NF+1) = "'$VALUE'"}
+					else {$3 = "'$VALUE'"; NF = 3}
+				}
+				print $0
+				break
+			}
+			print $0
+		}
+	} else {
+		print $0
+	} } 
+	END { exit todo } ' \
+	$PACMAN_PATH > $PACMAN_TEMP_PATH
+
+	if [ $? -eq 1 ]; then
+		awk '
+		BEGIN { todo = 1 }
+		{ if ($0 ~ /^\['$LABEL'\][[:blank:]]*$/) {
+			print $0
+
+			while(1) {
+				hasline = getline
+				if (!hasline || $0 ~ /^\[.*\][[:blank:]]*$/) {
+					break
+				}
+				if ($0 ~ /^#?'$OPTION'[[:blank:]]+=.*[[:blank:]]'$VALUE_ESCAPE'/) {
+					todo = 0
+					$1 = "'$OPTION'"
+					print $0
+					break
+				}
+				print $0
+			}
+		} else {
+			print $0
+		} } 
+		END { exit todo } ' \
+		$PACMAN_PATH > $PACMAN_TEMP_PATH
+
+		if [ $? -eq 1 ]; then
 			awk '
 			BEGIN { todo = 1 }
-			{
-				if ($0 ~ /^'$1'[[:blank:]]+=.*/ && todo)
-				{
-					$(NF+1) = "'$2'"
-					todo = 0
-				}
-				print $0 
-			}' \
-			/etc/pacman.conf > /tmp/pacman.conf
-			mv /tmp/pacman.conf /etc/pacman.conf
-		else
-			awk '$0 ~ /^#'$1'[[:blank:]]+=[[:blank:]]*$/ { exit 1 } ' /etc/pacman.conf
-			if [ $? = 1 ]; then
-				awk '
-				BEGIN { todo = 1 }
-				{
-					if ($0 ~ /^#'$1'[[:blank:]]+=[[:blank:]]*$/ && todo)
-					{
-						$1 = "'$1'"
-						$(NF+1) = "'$2'"
-						todo = 0
+			{ if ($0 ~ /^#?\['$LABEL'\][[:blank:]]*$/) {
+				todo = 0
+				print "['$LABEL']"
+
+				while(1) {
+					hasline = getline
+					if (!hasline || $0 ~ /^\[.*\][[:blank:]]*$/) {
+						print "'$OPTION' = '$VALUE'"
+						print ""
+						print $0
+						break
+					}
+					if ($0 ~ /^#?'$OPTION'[[:blank:]]+=.*[[:blank:]]'$VALUE_ESCAPE'/) {
+						$1 = "'$OPTION'"
+						print $0
+						break
 					}
 					print $0
-				}' \
-				/etc/pacman.conf > /tmp/pacman.conf
-				mv /tmp/pacman.conf /etc/pacman.conf
-			else
-				echo "'$1' = $2" >> /etc/pacman.conf
+				}
+			} else {
+				print $0
+			} } 
+			END { exit todo } ' \
+			$PACMAN_PATH > $PACMAN_TEMP_PATH
+
+			if [ $? -eq 1 ]; then
+				if [ $LOW_PRIORITY -eq 1 ]; then
+					cat $PACMAN_PATH > $PACMAN_TEMP_PATH
+					echo "" >> $PACMAN_TEMP_PATH
+					echo "[$LABEL]" >> $PACMAN_TEMP_PATH
+					echo "$OPTION = $VALUE" >> $PACMAN_TEMP_PATH
+				else
+					awk '
+					BEGIN { todo = 1 }
+					{
+						if (todo && $0 ~ /^#?\[.*\][[:blank:]]*$/) {
+							print "['$LABEL']"
+							print "'$OPTION' = '$VALUE'"
+							print ""
+							todo = 0
+						}
+						print $0
+					}
+
+					END {
+						if (todo) {
+							print ""
+							print "['$LABEL']"
+							print "'$OPTION' = '$VALUE'"
+						}
+					} ' \
+					$PACMAN_PATH > $PACMAN_TEMP_PATH
+				fi
 			fi
 		fi
 	fi
+
+	mv $PACMAN_TEMP_PATH $PACMAN_PATH
+	set -e
+}
+
+pacman_opt() {
+	local CONFIG=$1
+	local VALUE=$2
+
+	echo -n "Adding $VALUE to $CONFIG (/etc/pacman.conf)..."
+	pacman_config options $CONFIG $VALUE 1 0
+	echo "done"
+}
+
+pacman_repo() {
+	local REPO=$1
+	local INCLUDE=${2:-$DEFAULT_INCLUDE}
+
+	echo -n "Enabling repository [$REPO] (/etc/pacman.conf)..."
+	pacman_config $REPO "Include" $INCLUDE 0 1
 	echo "done"
 }
 
@@ -183,12 +328,12 @@ link() {
 
 install_doas() {
 	#install_aur requires sudo or doas
-	[ ! $(prompt "Do you want to install doas (will remove sudo if installed)?") ] && return
+	[ ! $(prompt "Do you want to install doas (will remove sudo and forbid it in /etc/pacman.conf)?") ] && return
 	install sudo
 	install_aur doas
 	remove sudo
-	pacman_conf IgnorePkg sudo
-	pacman_conf NoUpgrade sudo
+	pacman_opt IgnorePkg sudo
+	pacman_opt NoUpgrade sudo
 	link /bin/doas /bin/sudo
 	echo -n "Configuring doas... "
 	echo "permit persist $INSTALLUSER as root" > /etc/doas.conf
