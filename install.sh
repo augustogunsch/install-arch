@@ -106,7 +106,7 @@ partition() {
 	echo -n "Partitioning drive..."
 	parted --script "$DRIVE_TARGET" \
 	mklabel gpt \
-	mkpart swap ext4 0MiB 4GiB \
+	mkpart swap ext4 1MiB 4GiB \
 	mkpart boot ext4 4GiB 5Gib \
 	mkpart root ext4 5GiB 100%
 	echo "done"
