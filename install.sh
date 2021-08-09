@@ -46,7 +46,7 @@ echo "This script can only be run interactively. Make sure you are in a supporte
 echo -e "$AVAILABLE_PLATFORMS"
 
 ### SYSTEM ###
-DISTRO=$(lsb_release -is)
+DISTRO=$(cat /etc/os-release | sed -nE '/^ID=(.*)/\1/p')
 INIT_SYS=$(basename $(readlink /bin/init))
 quiet ls /sys/firmware/efi/efivars
 [ $? -eq 0 ] && UEFI=1 || UEFI=0
@@ -137,7 +137,7 @@ install_base() {
 	print_phase "System installation"
 	echo -n "Installing base system, kernel, bootloader and vi..."
 
-	if [ "$DISTRO" = "Artix" ]; then
+	if [ "$DISTRO" = "artix" ]; then
 		quiet basestrap /mnt base base-devel linux linux-firmware grub vi
 		echo "done"
 		if [ "$INIT_SYS" = "openrc-init" ]; then
@@ -153,7 +153,7 @@ install_base() {
 		fstabgen -U /mnt >> /mnt/etc/fstab
 		echo "done"
 
-	elif [ "$DISTRO" = "Arch" ]; then
+	elif [ "$DISTRO" = "arch" ]; then
 		quiet pacstrap /mnt base linux linux-firmware grub vi
 		echo "done"
 		echo -n "Generating fstab..."
@@ -174,7 +174,7 @@ configure() {
 	qpushd /mnt/usr/share/zoneinfo
 	ln -sf "/mnt/usr/share/zoneinfo/$(fzf --layout=reverse --height=20)" /mnt/etc/localtime
 	qpopd
-	[ "$DISTRO" = "Arch" ] && alias chroot="arch-chroot"
+	[ "$DISTRO" = "arch" ] && alias chroot="arch-chroot"
 	quiet chroot /mnt hwclock --systohc
 
 	echo "Choose locale:"
@@ -218,7 +218,7 @@ configure() {
 	echo "::1	localhost" >> /mnt/etc/hosts
 	echo "127.0.1.1	$hostname.localdomain	$hostname" >> /mnt/etc/hosts
 
-	if [ "$DISTRO" = "Artix" ]; then
+	if [ "$DISTRO" = "artix" ]; then
 		if [ "$INIT_SYS" = "openrc-init" ]; then
 			echo "hostname=\"$hostname\"" > /mnt/etc/conf.d/hostname
 			quiet chroot pacman -S connman-openrc
