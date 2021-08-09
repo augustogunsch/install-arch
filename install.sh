@@ -1,11 +1,12 @@
 #!/bin/sh
 set -e
 
-ask_root() {
-	if [ "$(whoami)" != "root" ]; then
-		echo "Please run as root."
-		exit 1
-	fi
+qpushd() {
+	pushd $@ > /dev/null
+}
+
+qpopd() {
+	popd $@ > /dev/null
 }
 
 quiet() {
@@ -15,20 +16,52 @@ quiet() {
 	set -e
 }
 
-#ask_root
+### FORCE ROOT ###
 
+[ $(whoami) != "root" ] && echo "Please run as root" && exit 1
+
+### COLORS ###
+RED='\033[0;31m'
+LGREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+BOLD=$(tput bold)
+NORM=$(tput sgr0)
+readonly RED
+readonly LGREEN
+readonly YELLOW
+readonly NC
+readonly BOLD
+readonly NORM
+
+### VARS ###
+CUR_PHASE=1
+MAX_PHASE=3
+
+### INFO ###
+AVAILABLE_PLATFORMS='Arch\nArtix (OpenRC)\n'
+readonly AVAILABLE_PLATFORMS
+
+echo "This script can only be run interactively. Make sure you are in a supported platform and have an Internet connection. Available platforms:"
+echo -e "$AVAILABLE_PLATFORMS"
+
+### SYSTEM ###
 DISTRO=$(lsb_release -is)
 INIT_SYS=$(basename $(readlink /bin/init))
-
 quiet ls /sys/firmware/efi/efivars
 [ $? -eq 0 ] && UEFI=1 || UEFI=0
+readonly DISTRO
+readonly INIT_SYS
+readonly UEFI
 
-AVAILABLE_PLATFORMS='Artix (OpenRC)\n'
-readonly AVAILABLE_PLATFORMS
+print_phase() {
+	echo -e "${BOLD}${YELLOW}[$CUR_PHASE/$MAX_PHASE] $1 phase${NC}${NORM}"
+	CUR_PHASE=$((CUR_PHASE+1))
+}
 
 install() {
 	echo -n "Installing $1..."
-	pacman -Sq --needed --noconfirm $1 2>&1 > /dev/null
+	quiet pacman -Sq --needed --noconfirm $1
 	echo "done"
 }
 
@@ -60,12 +93,13 @@ prompt_drive() {
 	fi
 
 	set +e
-	prompt "Installing for $DRIVE_TARGET. Confirm?"
+	prompt "Installing to $DRIVE_TARGET. Confirm?"
 	[ $? -eq 0 ] && exit 0
 	set -e
 }
 
 partition() {
+	print_phase "Disk partitioning"
 	prompt_drive
 
 	echo -n "Partitioning drive..."
@@ -98,9 +132,111 @@ partition() {
 	echo "done"
 }
 
+install_base() {
+	print_phase "System installation"
+	echo -n "Installing base system, kernel, bootloader and vi..."
+
+	if [ "$DISTRO" = "Artix" ]; then
+		quiet basestrap /mnt base base-devel linux linux-firmware grub vi
+		echo "done"
+		if [ "$INIT_SYS" = "openrc-init" ]; then
+			echo -n "Installing openrc..."
+			quiet basestrap /mnt openrc elogind-openrc
+			echo "done"
+		else	
+			echo
+			echo "Error: Unsupported init system \"$INIT_SYS\""
+			exit 1
+		fi
+		echo -n "Generating fstab..."
+		fstabgen -U /mnt >> /mnt/etc/fstab
+		echo "done"
+
+	elif [ "$DISTRO" = "Arch" ]; then
+		quiet pacstrap /mnt base linux linux-firmware grub vi
+		echo "done"
+		echo -n "Generating fstab..."
+		genfstab -U /mnt >> /mnt/etc/fstab
+		echo "done"
+	else
+		echo
+		echo "Error: Unsupported distro."
+		exit 1
+	fi
+}
+
+configure() {
+	print_phase "System configuration"
+	install fzf
+
+	echo "Choose timezone:"
+	qpushd /mnt/usr/share/zoneinfo
+	ln -sf "/mnt/usr/share/zoneinfo/$(fzf --layout=reverse --height=20)" /mnt/etc/localtime
+	qpopd
+	[ "$DISTRO" = "Arch" ] && alias chroot="arch-chroot"
+	quiet chroot /mnt hwclock --systohc
+
+	echo "Choose locale:"
+	local LOCALE=$(cat /mnt/etc/locale.gen | sed '/^#\s/D' | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
+
+	cat /mnt/etc/locale.gen | sed "s/^#$LOCALE/$LOCALE/" > /tmp/locale.gen
+	mv /tmp/locale.gen /mnt/etc/locale.gen
+	quiet chroot /mnt locale-gen
+
+	echo "export LANG=\"en_US.UTF-8\"" > /mnt/etc/locale.conf
+	echo "export LC_COLLATE=\"C\"" >> /mnt/etc/locale.conf
+
+	echo -n "Configuring boot loader..."
+	if [ $UEFI -eq 1 ]; then
+		quiet chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --botloader-id=grub
+	else
+		quiet chroot /mnt grub-install "$DRIVE_TARGET"
+	fi
+	quiet chroot grub-mkconfig -o /boot/grub/grub.cfg
+	echo "done"
+
+	echo "Type root password:"
+	chroot /mnt passwd
+
+	echo -n "Type your personal username: "
+	local user
+	read user
+	chroot /mnt useradd -m "$user"
+	"Type your password:"
+	chroot /mnt passwd "$user"
+
+	echo -n "Type the machine hostname: "
+	local hostname
+	read hostname
+
+	echo "$hostname" > /mnt/etc/hostname
+	echo "127.0.0.1	localhost" > /mnt/etc/hosts
+	echo "::1	localhost" >> /mnt/etc/hosts
+	echo "127.0.1.1	$hostname.localdomain	$hostname" >> /mnt/etc/hosts
+
+	if [ "$DISTRO" = "Artix" ]; then
+		if [ "$INIT_SYS" = "openrc-init" ]; then
+			echo "hostname=\"$hostname\"" > /mnt/etc/conf.d/hostname
+			quiet chroot pacman -S connman-openrc
+			quiet chroot rc-update add connmand
+		fi
+		quiet chroot pacman -S dhcpcd wpa_supplicant
+	fi
+
+	umount -R /mnt
+	echo -n "Ready to reboot. Press any key to continue..."
+	read dummy
+	reboot
+}
+
 main() {
-	prompt_drive
-	echo "$DRIVE_TARGET"
+	echo -n "Updating package database..."
+	quiet pacman -Sy
+	echo "done"
+
+	partition
+	install_base
+	configure
 }
 
 main

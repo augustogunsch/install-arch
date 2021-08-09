@@ -1,12 +1,19 @@
 #!/bin/sh
 set -e
 
-pushd () {
-    pushd "$@" > /dev/null
+qpushd() {
+	pushd $@ > /dev/null
 }
 
-popd () {
-    popd "$@" > /dev/null
+qpopd() {
+	popd $@ > /dev/null
+}
+
+quiet() {
+	local DUMMY
+	set +e
+	DUMMY=$($@ 2>&1 > /dev/null)
+	set -e
 }
 
 ### COLORS ###
@@ -144,7 +151,7 @@ fi
 ### INSTALLATION ###
 [ $VERBOSE ] && set -x
 
-printphase() {
+print_phase() {
 	echo -e "${BOLD}${YELLOW}[$CUR_PHASE/$MAX_PHASE] $1 phase${NC}${NORM}"
 	CUR_PHASE=$((CUR_PHASE+1))
 }
@@ -152,10 +159,10 @@ printphase() {
 install_aur() {
 	dir="$HOMEDIR/$1"
 	echo -n "Installing $1... "
-	sudo -u "$1" git clone -q "https://aur.archlinux.org/$1.git" "$dir" 2>&1 > /dev/null
-	pushd "$dir"
-	sudo -u "$1" makepkg -si --noconfirm 2>&1 > /dev/null
-	popd
+	quiet sudo -u "$1" git clone -q "https://aur.archlinux.org/$1.git" "$dir"
+	qpushd -q "$dir"
+	quiet sudo -u "$1" makepkg -si --noconfirm
+	qpopd -q
 	rm -rf "$1"
 	echo "done"
 }
@@ -410,7 +417,7 @@ repos() {
 
 install_packages() {
 	if [ "$INSTALL" != "DOTFILES" ]; then
-		printphase "Package installation"
+		print_phase "Package installation"
 		repos
 		
 		echo -n "Upgrading system... "
