@@ -16,9 +16,12 @@ quiet() {
 	set -e
 }
 
-### FORCE ROOT ###
 
+### FORCE ROOT ###
 [ $(whoami) != "root" ] && echo "Please run as root" && exit 1
+
+### URLs ###
+FZF_DOWNLOAD="$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep linux_amd64 | sed -nE 's/^\s*"browser_download_url":\s*"(.*)"\s*$/\1/p')"
 
 ### COLORS ###
 RED='\033[0;31m'
@@ -59,10 +62,10 @@ print_phase() {
 	CUR_PHASE=$((CUR_PHASE+1))
 }
 
-install() {
-	echo -n "Installing $1..."
-	quiet pacman -Sq --needed --noconfirm $1
-	echo "done"
+download_fzf() {
+	curl -sL "$FZF_DOWNLOAD" -o fzf.tar.gz
+	tar -xf fzf.tar.gz
+	alias fzf="./fzf"
 }
 
 prompt() {
@@ -166,17 +169,16 @@ install_base() {
 	fi
 }
 
-configure() {
-	print_phase "System configuration"
-	install fzf
-
+set_timezone() {
 	echo "Choose timezone:"
 	qpushd /mnt/usr/share/zoneinfo
 	ln -sf "/mnt/usr/share/zoneinfo/$(fzf --layout=reverse --height=20)" /mnt/etc/localtime
 	qpopd
 	[ "$DISTRO" = "arch" ] && alias chroot="arch-chroot"
 	quiet chroot /mnt hwclock --systohc
+}
 
+set_locale() {
 	echo "Choose locale:"
 	local LOCALE=$(cat /mnt/etc/locale.gen | sed '/^#\s/D' | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
 
@@ -188,7 +190,9 @@ configure() {
 	echo "export LANG=\"en_US.UTF-8\"" > /mnt/etc/locale.conf
 	echo "export LC_COLLATE=\"C\"" >> /mnt/etc/locale.conf
 	echo "done"
+}
 
+setup_grub() {
 	echo -n "Configuring boot loader..."
 	if [ $UEFI -eq 1 ]; then
 		quiet chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --botloader-id=grub
@@ -197,7 +201,9 @@ configure() {
 	fi
 	quiet chroot grub-mkconfig -o /boot/grub/grub.cfg
 	echo "done"
+}
 
+setup_users() {
 	echo "Type root password:"
 	chroot /mnt passwd -q
 
@@ -207,7 +213,9 @@ configure() {
 	chroot /mnt useradd -m "$user"
 	echo "Type your password:"
 	chroot /mnt passwd -q "$user"
+}
 
+setup_network() {
 	echo -n "Type the machine hostname: "
 	local hostname
 	read hostname
@@ -227,6 +235,17 @@ configure() {
 		quiet chroot pacman -S dhcpcd wpa_supplicant
 	fi
 	echo "done"
+}
+
+configure() {
+	print_phase "System configuration"
+	download_fzf
+
+	set_timezone
+	set_locale
+	setup_grub
+	setup_users
+	setup_network
 
 	umount -R /mnt
 	echo -n "Ready to reboot. Press any key to continue..."
@@ -235,10 +254,6 @@ configure() {
 }
 
 main() {
-	echo -n "Updating package database..."
-	quiet pacman -Sy
-	echo "done"
-
 	partition
 	install_base
 	configure
