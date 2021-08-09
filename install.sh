@@ -123,7 +123,7 @@ partition() {
 
 	echo -n "Configuring BOOT partition..."
 	if [ $UEFI -eq 1 ]; then
-		quiet mkfs.fat32 "$DRIVE_TARGET"2
+		quiet mkfs.fat -F 32 "$DRIVE_TARGET"2
 		fatlabel "$DRIVE_TARGET"2 BOOT
 	else
 		quiet mkfs.ext4 -L BOOT "$DRIVE_TARGET"2
