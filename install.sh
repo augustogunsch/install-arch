@@ -180,12 +180,14 @@ configure() {
 	echo "Choose locale:"
 	local LOCALE=$(cat /mnt/etc/locale.gen | sed '/^#\s/D' | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
 
+	echo -n "Configuring locale..."
 	cat /mnt/etc/locale.gen | sed "s/^#$LOCALE/$LOCALE/" > /tmp/locale.gen
 	mv /tmp/locale.gen /mnt/etc/locale.gen
 	quiet chroot /mnt locale-gen
 
 	echo "export LANG=\"en_US.UTF-8\"" > /mnt/etc/locale.conf
 	echo "export LC_COLLATE=\"C\"" >> /mnt/etc/locale.conf
+	echo "done"
 
 	echo -n "Configuring boot loader..."
 	if [ $UEFI -eq 1 ]; then
@@ -197,19 +199,20 @@ configure() {
 	echo "done"
 
 	echo "Type root password:"
-	chroot /mnt passwd
+	chroot /mnt passwd -q
 
 	echo -n "Type your personal username: "
 	local user
 	read user
 	chroot /mnt useradd -m "$user"
-	"Type your password:"
-	chroot /mnt passwd "$user"
+	echo "Type your password:"
+	chroot /mnt passwd -q "$user"
 
 	echo -n "Type the machine hostname: "
 	local hostname
 	read hostname
 
+	echo -n "Configuring hostname and network..."
 	echo "$hostname" > /mnt/etc/hostname
 	echo "127.0.0.1	localhost" > /mnt/etc/hosts
 	echo "::1	localhost" >> /mnt/etc/hosts
@@ -223,6 +226,7 @@ configure() {
 		fi
 		quiet chroot pacman -S dhcpcd wpa_supplicant
 	fi
+	echo "done"
 
 	umount -R /mnt
 	echo -n "Ready to reboot. Press any key to continue..."
