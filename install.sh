@@ -100,6 +100,7 @@ prompt_drive() {
 
 partition() {
 	print_phase "Disk partitioning"
+	install parted
 	prompt_drive
 
 	echo -n "Partitioning drive..."
