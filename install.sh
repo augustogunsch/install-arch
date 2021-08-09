@@ -46,7 +46,7 @@ echo "This script can only be run interactively. Make sure you are in a supporte
 echo -e "$AVAILABLE_PLATFORMS"
 
 ### SYSTEM ###
-DISTRO=$(cat /etc/os-release | sed -nE '/^ID=(.*)/\1/p')
+DISTRO=$(cat /etc/os-release | sed -nE 's/^ID=(.*)/\1/p')
 INIT_SYS=$(basename $(readlink /bin/init))
 quiet ls /sys/firmware/efi/efivars
 [ $? -eq 0 ] && UEFI=1 || UEFI=0
