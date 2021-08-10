@@ -22,6 +22,7 @@ quiet() {
 
 ### URLs ###
 FZF_DOWNLOAD="$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep linux_amd64 | sed -nE 's/^\s*"browser_download_url":\s*"(.*)"\s*$/\1/p')"
+PARTED_DOWNLOAD="https://archlinux.org/packages/extra/x86_64/parted/download"
 
 ### COLORS ###
 RED='\033[0;31m'
@@ -63,9 +64,20 @@ print_phase() {
 }
 
 download_fzf() {
+	echo -n "Downloading fzf (for script use only)..."
 	curl -sL "$FZF_DOWNLOAD" -o fzf.tar.gz
 	tar -xf fzf.tar.gz
 	alias fzf="./fzf"
+	echo "done"
+}
+
+download_parted() {
+	echo -n "Downloading parted (for script use only)..."
+	curl -sL "$PARTED_DOWNLOAD" -o parted.tar.xz
+	tar -xf parted.tar.xz
+	cp ./usr/bin/parted .
+	alias parted="./parted"
+	echo "done"
 }
 
 prompt() {
@@ -103,7 +115,7 @@ prompt_drive() {
 
 partition() {
 	print_phase "Disk partitioning"
-	install parted
+	[ -e /bin/parted ] || download_parted
 	prompt_drive
 
 	echo -n "Partitioning drive..."
