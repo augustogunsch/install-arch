@@ -21,11 +21,9 @@ quiet() {
 	set -e
 }
 
-testif() {
+quiet_quit_on_error() {
 	local DUMMY
-	set +e
 	DUMMY=$($@ 2>&1 > /dev/null)
-	set -e
 }
 
 
@@ -64,8 +62,10 @@ echo -e "$AVAILABLE_PLATFORMS"
 ### SYSTEM ###
 DISTRO=$(cat /etc/os-release | sed -nE 's/^ID=(.*)/\1/p')
 INIT_SYS=$(basename $(readlink /bin/init))
-testif ls /sys/firmware/efi/efivars
+set +e
+quiet_quit_on_error ls /sys/firmware/efi/efivars
 [ $? -eq 0 ] && UEFI=1 || UEFI=0
+set -e
 readonly DISTRO
 readonly INIT_SYS
 readonly UEFI
@@ -150,6 +150,7 @@ partition() {
 	mkpart swap ext4 1MiB 4GiB \
 	mkpart boot ext4 4GiB 5Gib \
 	mkpart root ext4 5GiB 100%
+	[ $UEFI -eq 0 ] && parted --script "$DRIVE_TARGET" set 2 bios_grub on
 	echo "done"
 
 	echo -n "Configuring SWAP partition..."
@@ -226,9 +227,9 @@ setup_grub() {
 	if [ $UEFI -eq 1 ]; then
 		quiet right_chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=grub
 	else
-		quiet right_chroot /mnt grub-install "$DRIVE_TARGET"
+		quiet right_chroot /mnt grub-install --target=i386-pc "$DRIVE_TARGET"
 	fi
-	quiet right_chroot grub-mkconfig -o /boot/grub/grub.cfg
+	quiet right_chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 	echo "done"
 }
 
@@ -258,10 +259,10 @@ setup_network() {
 	if [ "$DISTRO" = "artix" ]; then
 		if [ "$INIT_SYS" = "openrc-init" ]; then
 			echo "hostname=\"$hostname\"" > /mnt/etc/conf.d/hostname
-			quiet right_chroot pacman -S connman-openrc
-			quiet right_chroot rc-update add connmand
+			quiet right_chroot /mnt pacman -S connman-openrc
+			quiet right_chroot /mnt rc-update add connmand
 		fi
-		quiet right_chroot pacman -S dhcpcd wpa_supplicant
+		quiet right_chroot /mnt pacman -S dhcpcd wpa_supplicant
 	fi
 	echo "done"
 }
