@@ -11,13 +11,19 @@ qpopd() {
 
 quiet() {
 	local DUMMY
+	set +e
 	DUMMY=$($@ 2>&1 > /dev/null)
+	if [ $? -ne 0 ]; then
+		echo "$DUMMY"
+		set -e
+		return 1
+	fi
+	set -e
 }
 
 testif() {
-	set +e
-	quiet $@
-	set -e
+	local DUMMY
+	DUMMY=$($@ 2>&1 > /dev/null)
 }
 
 
