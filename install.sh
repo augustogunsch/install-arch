@@ -21,7 +21,7 @@ quiet() {
 	set -e
 }
 
-quiet_quit_on_error() {
+ultra_quiet() {
 	local DUMMY
 	DUMMY=$($@ 2>&1 > /dev/null)
 }
@@ -63,7 +63,7 @@ echo -e "$AVAILABLE_PLATFORMS"
 DISTRO=$(cat /etc/os-release | sed -nE 's/^ID=(.*)/\1/p')
 INIT_SYS=$(basename $(readlink /bin/init))
 set +e
-quiet_quit_on_error ls /sys/firmware/efi/efivars
+ultra_quiet ls /sys/firmware/efi/efivars
 [ $? -eq 0 ] && UEFI=1 || UEFI=0
 set -e
 readonly DISTRO
