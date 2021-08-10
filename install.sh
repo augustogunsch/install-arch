@@ -14,6 +14,12 @@ quiet() {
 	DUMMY=$($@ 2>&1 > /dev/null)
 }
 
+testif() {
+	set +e
+	quiet $@
+	set -e
+}
+
 
 ### FORCE ROOT ###
 [ $(whoami) != "root" ] && echo "Please run as root" && exit 1
@@ -50,7 +56,7 @@ echo -e "$AVAILABLE_PLATFORMS"
 ### SYSTEM ###
 DISTRO=$(cat /etc/os-release | sed -nE 's/^ID=(.*)/\1/p')
 INIT_SYS=$(basename $(readlink /bin/init))
-quiet ls /sys/firmware/efi/efivars
+testif ls /sys/firmware/efi/efivars
 [ $? -eq 0 ] && UEFI=1 || UEFI=0
 readonly DISTRO
 readonly INIT_SYS
