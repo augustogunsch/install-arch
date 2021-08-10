@@ -142,7 +142,6 @@ prompt_drive() {
 partition() {
 	print_phase "Disk partitioning"
 	[ -e /bin/parted ] || download_parted
-	prompt_drive
 
 	echo -n "Partitioning drive..."
 	parted --script "$DRIVE_TARGET" \
@@ -201,17 +200,11 @@ install_base() {
 }
 
 set_timezone() {
-	echo "Choose timezone:"
-	qpushd /mnt/usr/share/zoneinfo
-	ln -sf "/mnt/usr/share/zoneinfo/$(fzf --layout=reverse --height=20)" /mnt/etc/localtime
-	qpopd
+	ln -sf "/mnt/usr/share/zoneinfo/$TIMEZONE" /mnt/etc/localtime
 	quiet right_chroot /mnt hwclock --systohc
 }
 
 set_locale() {
-	echo "Choose locale:"
-	local LOCALE=$(cat /mnt/etc/locale.gen | sed '/^#\s/D' | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
-
 	echo -n "Configuring locale..."
 	cat /mnt/etc/locale.gen | sed "s/^#$LOCALE/$LOCALE/" > /tmp/locale.gen
 	mv /tmp/locale.gen /mnt/etc/locale.gen
@@ -234,31 +227,20 @@ setup_grub() {
 }
 
 setup_users() {
-	echo "Type root password:"
-	right_chroot /mnt passwd -q
-
-	echo -n "Type your personal username: "
-	local user
-	read user
-	right_chroot /mnt useradd -m "$user"
-	echo "Type your password:"
-	right_chroot /mnt passwd -q "$user"
+	right_chroot /mnt useradd -m "$PERSONAL_USER"
+	right_chroot /mnt echo -e "root:$ROOT_PASSWORD\n$PERSONAL_USER:$PERSONAL_PASSWORD" | chpasswd -q
 }
 
 setup_network() {
-	echo -n "Type the machine hostname: "
-	local hostname
-	read hostname
-
 	echo -n "Configuring hostname and network..."
-	echo "$hostname" > /mnt/etc/hostname
+	echo "$MACHINE_HOSTNAME" > /mnt/etc/hostname
 	echo "127.0.0.1	localhost" > /mnt/etc/hosts
 	echo "::1	localhost" >> /mnt/etc/hosts
-	echo "127.0.1.1	$hostname.localdomain	$hostname" >> /mnt/etc/hosts
+	echo "127.0.1.1	$MACHINE_HOSTNAME.localdomain	$MACHINE_HOSTNAME" >> /mnt/etc/hosts
 
 	if [ "$DISTRO" = "artix" ]; then
 		if [ "$INIT_SYS" = "openrc-init" ]; then
-			echo "hostname=\"$hostname\"" > /mnt/etc/conf.d/hostname
+			echo "hostname=\"$MACHINE_HOSTNAME\"" > /mnt/etc/conf.d/hostname
 			quiet right_chroot /mnt pacman -S connman-openrc
 			quiet right_chroot /mnt rc-update add connmand
 		fi
@@ -267,9 +249,45 @@ setup_network() {
 	echo "done"
 }
 
+ask_password() {
+	echo -n "Type password for $1: "
+	read USER_PASSWORD
+	echo -n "Confirm password: "
+	local PASSWORD_CONFIRM
+	read PASSWORD_CONFIRM
+	if [ "$USER_PASSWORD" != "$PASSWORD_CONFIRM" ]; then
+		echo "Wrong passwords. Please try again."
+		ask_password $1
+	fi
+}
+
+prompt_all() {
+	download_fzf
+
+	prompt_drive
+
+	echo "Choose timezone:"
+	qpushd /usr/share/zoneinfo
+	TIMEZONE="$(fzf --layout=reverse --height=20)"
+	qpopd
+
+	echo "Choose locale:"
+	local LOCALE=$(cat /etc/locale.gen | sed '/^#\s/D' | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
+
+	ask_password root
+	ROOT_PASSWORD="$USER_PASSWORD"
+
+	echo -n "Type your personal username: "
+	read PERSONAL_USER
+	ask_password "$PERSONAL_USER"
+	PERSONAL_PASSWORD="$USER_PASSWORD"
+
+	echo -n "Type the machine hostname: "
+	read MACHINE_HOSTNAME
+}
+
 configure() {
 	print_phase "System configuration"
-	download_fzf
 
 	set_timezone
 	set_locale
@@ -284,6 +302,7 @@ configure() {
 }
 
 main() {
+	prompt_all
 	partition
 	install_base
 	configure
