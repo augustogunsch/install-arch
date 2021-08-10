@@ -72,6 +72,7 @@ readonly UEFI
 if [ "$DISTRO" = "arch" ]; then
 	alias chroot="arch-chroot"
 	alias fstabgen="genfstab"
+	alias basestrap="pacstap"
 fi
 
 print_phase() {
