@@ -11,9 +11,7 @@ qpopd() {
 
 quiet() {
 	local DUMMY
-	set +e
 	DUMMY=$($@ 2>&1 > /dev/null)
-	set -e
 }
 
 
@@ -169,9 +167,8 @@ install_base() {
 		echo -n "Generating fstab..."
 		fstabgen -U /mnt >> /mnt/etc/fstab
 		echo "done"
-
 	elif [ "$DISTRO" = "arch" ]; then
-		quiet pacstrap /mnt base linux linux-firmware grub vi
+		quiet pacstrap /mnt base base-devel linux linux-firmware grub vi
 		echo "done"
 		echo -n "Generating fstab..."
 		genfstab -U /mnt >> /mnt/etc/fstab
