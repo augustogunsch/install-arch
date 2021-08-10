@@ -67,7 +67,7 @@ download_fzf() {
 	echo -n "Downloading fzf (for script use only)..."
 	curl -sL "$FZF_DOWNLOAD" -o fzf.tar.gz
 	tar -xf fzf.tar.gz
-	alias fzf="./fzf"
+	mv ./fzf /usr/bin/fzf
 	echo "done"
 }
 
@@ -75,8 +75,7 @@ download_parted() {
 	echo -n "Downloading parted (for script use only)..."
 	curl -sL "$PARTED_DOWNLOAD" -o parted.tar.xz
 	tar -xf parted.tar.xz
-	cp ./usr/bin/parted .
-	alias parted="./parted"
+	cp ./usr/bin/parted /usr/bin/parted
 	echo "done"
 }
 
