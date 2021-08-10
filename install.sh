@@ -47,7 +47,7 @@ CUR_PHASE=1
 MAX_PHASE=3
 
 ### INFO ###
-AVAILABLE_PLATFORMS='Arch\nArtix (OpenRC)\n'
+AVAILABLE_PLATFORMS='Both BIOS and UEFI systems\nOnly x86_64 systems\nDistros:\nArch\nArtix (OpenRC)\n'
 readonly AVAILABLE_PLATFORMS
 
 echo "This script can only be run interactively. Make sure you are in a supported platform and have an Internet connection. Available platforms:"
@@ -61,6 +61,10 @@ testif ls /sys/firmware/efi/efivars
 readonly DISTRO
 readonly INIT_SYS
 readonly UEFI
+if [ "$DISTRO" = "arch" ]; then
+	alias chroot="arch-chroot"
+	alias fstabgen="genfstab"
+fi
 
 print_phase() {
 	echo -e "${BOLD}${YELLOW}[$CUR_PHASE/$MAX_PHASE] $1 phase${NC}${NORM}"
@@ -157,10 +161,10 @@ partition() {
 install_base() {
 	print_phase "System installation"
 	echo -n "Installing base system, kernel, bootloader and vi..."
+	quiet basestrap /mnt base base-devel linux linux-firmware grub vi
+	echo "done"
 
 	if [ "$DISTRO" = "artix" ]; then
-		quiet basestrap /mnt base base-devel linux linux-firmware grub vi
-		echo "done"
 		if [ "$INIT_SYS" = "openrc-init" ]; then
 			echo -n "Installing openrc..."
 			quiet basestrap /mnt openrc elogind-openrc
@@ -170,20 +174,13 @@ install_base() {
 			echo "Error: Unsupported init system \"$INIT_SYS\""
 			exit 1
 		fi
-		echo -n "Generating fstab..."
-		fstabgen -U /mnt >> /mnt/etc/fstab
-		echo "done"
-	elif [ "$DISTRO" = "arch" ]; then
-		quiet pacstrap /mnt base base-devel linux linux-firmware grub vi
-		echo "done"
-		echo -n "Generating fstab..."
-		genfstab -U /mnt >> /mnt/etc/fstab
-		echo "done"
-	else
-		echo
-		echo "Error: Unsupported distro."
-		exit 1
+	elif [ "$DISTRO" != "arch" ]; then
+		echo "Error: Unsupported distro \"$DISTRO\""
 	fi
+
+	echo -n "Generating fstab..."
+	fstabgen -U /mnt >> /mnt/etc/fstab
+	echo "done"
 }
 
 set_timezone() {
@@ -191,7 +188,6 @@ set_timezone() {
 	qpushd /mnt/usr/share/zoneinfo
 	ln -sf "/mnt/usr/share/zoneinfo/$(fzf --layout=reverse --height=20)" /mnt/etc/localtime
 	qpopd
-	[ "$DISTRO" = "arch" ] && alias chroot="arch-chroot"
 	quiet chroot /mnt hwclock --systohc
 }
 
