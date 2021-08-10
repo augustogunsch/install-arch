@@ -23,7 +23,9 @@ quiet() {
 
 testif() {
 	local DUMMY
+	set +e
 	DUMMY=$($@ 2>&1 > /dev/null)
+	set -e
 }
 
 
