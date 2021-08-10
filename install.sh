@@ -1,5 +1,4 @@
 #!/bin/sh
-shopt -s expand_aliases
 set -e
 
 qpushd() {
@@ -70,11 +69,18 @@ testif ls /sys/firmware/efi/efivars
 readonly DISTRO
 readonly INIT_SYS
 readonly UEFI
-if [ "$DISTRO" = "arch" ]; then
-	alias chroot="arch-chroot"
-	alias fstabgen="genfstab"
-	alias basestrap="pacstrap"
-fi
+
+right_chroot() {
+	[ "$DISTRO" = "arch" ] && arch-chroot $@ || chroot $@
+}
+
+right_fstabgen() {
+	[ "$DISTRO" = "arch" ] && genfstab $@ || fstabgen $@
+}
+
+right_basestrap() {
+	[ "$DISTRO" = "arch" ] && pacstrap $@ || basestrap $@
+}
 
 print_phase() {
 	echo -e "${BOLD}${YELLOW}[$CUR_PHASE/$MAX_PHASE] $1 phase${NC}${NORM}"
@@ -171,13 +177,13 @@ partition() {
 install_base() {
 	print_phase "System installation"
 	echo -n "Installing base system, kernel, bootloader and vi..."
-	quiet basestrap /mnt base base-devel linux linux-firmware grub vi
+	quiet right_basestrap /mnt base base-devel linux linux-firmware grub vi
 	echo "done"
 
 	if [ "$DISTRO" = "artix" ]; then
 		if [ "$INIT_SYS" = "openrc-init" ]; then
 			echo -n "Installing openrc..."
-			quiet basestrap /mnt openrc elogind-openrc
+			quiet right_basestrap /mnt openrc elogind-openrc
 			echo "done"
 		else	
 			echo
@@ -189,7 +195,7 @@ install_base() {
 	fi
 
 	echo -n "Generating fstab..."
-	fstabgen -U /mnt >> /mnt/etc/fstab
+	right_fstabgen -U /mnt >> /mnt/etc/fstab
 	echo "done"
 }
 
@@ -198,7 +204,7 @@ set_timezone() {
 	qpushd /mnt/usr/share/zoneinfo
 	ln -sf "/mnt/usr/share/zoneinfo/$(fzf --layout=reverse --height=20)" /mnt/etc/localtime
 	qpopd
-	quiet chroot /mnt hwclock --systohc
+	quiet right_chroot /mnt hwclock --systohc
 }
 
 set_locale() {
@@ -208,7 +214,7 @@ set_locale() {
 	echo -n "Configuring locale..."
 	cat /mnt/etc/locale.gen | sed "s/^#$LOCALE/$LOCALE/" > /tmp/locale.gen
 	mv /tmp/locale.gen /mnt/etc/locale.gen
-	quiet chroot /mnt locale-gen
+	quiet right_chroot /mnt locale-gen
 
 	echo "export LANG=\"en_US.UTF-8\"" > /mnt/etc/locale.conf
 	echo "export LC_COLLATE=\"C\"" >> /mnt/etc/locale.conf
@@ -218,24 +224,24 @@ set_locale() {
 setup_grub() {
 	echo -n "Configuring boot loader..."
 	if [ $UEFI -eq 1 ]; then
-		quiet chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --botloader-id=grub
+		quiet right_chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --botloader-id=grub
 	else
-		quiet chroot /mnt grub-install "$DRIVE_TARGET"
+		quiet right_chroot /mnt grub-install "$DRIVE_TARGET"
 	fi
-	quiet chroot grub-mkconfig -o /boot/grub/grub.cfg
+	quiet right_chroot grub-mkconfig -o /boot/grub/grub.cfg
 	echo "done"
 }
 
 setup_users() {
 	echo "Type root password:"
-	chroot /mnt passwd -q
+	right_chroot /mnt passwd -q
 
 	echo -n "Type your personal username: "
 	local user
 	read user
-	chroot /mnt useradd -m "$user"
+	right_chroot /mnt useradd -m "$user"
 	echo "Type your password:"
-	chroot /mnt passwd -q "$user"
+	right_chroot /mnt passwd -q "$user"
 }
 
 setup_network() {
@@ -252,10 +258,10 @@ setup_network() {
 	if [ "$DISTRO" = "artix" ]; then
 		if [ "$INIT_SYS" = "openrc-init" ]; then
 			echo "hostname=\"$hostname\"" > /mnt/etc/conf.d/hostname
-			quiet chroot pacman -S connman-openrc
-			quiet chroot rc-update add connmand
+			quiet right_chroot pacman -S connman-openrc
+			quiet right_chroot rc-update add connmand
 		fi
-		quiet chroot pacman -S dhcpcd wpa_supplicant
+		quiet right_chroot pacman -S dhcpcd wpa_supplicant
 	fi
 	echo "done"
 }
