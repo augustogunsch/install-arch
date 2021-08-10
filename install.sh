@@ -228,8 +228,10 @@ setup_grub() {
 }
 
 setup_users() {
+	echo -n "Configuring users..."
 	right_chroot /mnt useradd -m "$PERSONAL_USER"
-	right_chroot /mnt echo -e "root:$ROOT_PASSWORD\n$PERSONAL_USER:$PERSONAL_PASSWORD" | chpasswd -q
+	echo -e "root:$ROOT_PASSWORD\n$PERSONAL_USER:$PERSONAL_PASSWORD" | chpasswd -R /mnt
+	echo "done"
 }
 
 setup_network() {
@@ -255,11 +257,13 @@ ask_password() {
 	stty -echo
 	read USER_PASSWORD
 	stty echo
+	echo
 	echo -n "Confirm password: "
 	stty -echo
 	local PASSWORD_CONFIRM
 	read PASSWORD_CONFIRM
 	stty echo
+	echo
 	if [ "$USER_PASSWORD" != "$PASSWORD_CONFIRM" ]; then
 		echo "Wrong passwords. Please try again."
 		ask_password $1
@@ -293,11 +297,11 @@ prompt_all() {
 
 post_install() {
 	curl -sL "$POST_INSTALL_SCRIPT" -o post-install.sh
-	mv post-install /mnt/root
-	chmod +x /mnt/root
+	mv post-install.sh /mnt/root
+	chmod +x /mnt/root/post-install.sh
 	echo -n "Ready for post-install script. Press any key to continue..."
 	read dummy
-	right_chroot /root/post-install.sh
+	right_chroot /mnt /root/post-install.sh
 }
 
 configure() {

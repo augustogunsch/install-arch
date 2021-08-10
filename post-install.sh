@@ -39,9 +39,10 @@ USER_OUT=""
 PACMAN_CONF="/etc/pacman.conf"
 PACMAN_TEMP_CONF="/tmp/pacman.conf"
 DOAS_CONF="/etc/doas.conf"
-DISTRO=$(lsb_release -is)
+DISTRO=$(cat /etc/os-release | sed -nE 's/^ID=(.*)/\1/p')
+INIT_SYS=$(basename $(readlink /bin/init))
 DEFAULT_INCLUDE='/etc/pacman.d/mirrorlist'
-if [ "$DISTRO" != "Arch" -a "$DISTRO" != "Artix" ]; then
+if [ "$DISTRO" != "arch" -a "$DISTRO" != "artix" ]; then
 	echo "Error: $(lsb_release -ds) not supported"
 	usage
 fi
@@ -403,7 +404,7 @@ install_doas() {
 
 repos() {
 	echo "Detected distro $DISTRO Linux. Proceeding with enabling more repositories."
-	if [ "$DISTRO" = "Artix" ]; then
+	if [ "$DISTRO" = "artix" ]; then
 		pacman_repo lib32
 		local ARCH_REPOS="$DEFAULT_INCLUDE-arch"
 		install archlinux-mirrorlist
