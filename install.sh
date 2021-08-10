@@ -68,14 +68,16 @@ download_fzf() {
 	curl -sL "$FZF_DOWNLOAD" -o fzf.tar.gz
 	tar -xf fzf.tar.gz
 	mv ./fzf /usr/bin/fzf
+	rm fzf.tar.gz
 	echo "done"
 }
 
 download_parted() {
 	echo -n "Downloading parted (for script use only)..."
-	curl -sL "$PARTED_DOWNLOAD" -o parted.tar.xz
-	tar -xf parted.tar.xz
-	cp ./usr/bin/parted /usr/bin/parted
+	curl -sL "$PARTED_DOWNLOAD" -o parted.tar.zst
+	tar -xf parted.tar.zst
+	mv -r ./usr /
+	rm parted.tar.zst
 	echo "done"
 }
 
