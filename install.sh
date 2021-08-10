@@ -33,6 +33,7 @@ ultra_quiet() {
 ### URLs ###
 FZF_DOWNLOAD="$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep linux_amd64 | sed -nE 's/^\s*"browser_download_url":\s*"(.*)"\s*$/\1/p')"
 PARTED_DOWNLOAD="https://archlinux.org/packages/extra/x86_64/parted/download"
+POST_INSTALL_SCRIPT="https://raw.githubusercontent.com/augustogunsch/install-arch/master/post-install.sh"
 
 ### COLORS ###
 RED='\033[0;31m'
@@ -251,10 +252,14 @@ setup_network() {
 
 ask_password() {
 	echo -n "Type password for $1: "
+	stty -echo
 	read USER_PASSWORD
+	stty echo
 	echo -n "Confirm password: "
+	stty -echo
 	local PASSWORD_CONFIRM
 	read PASSWORD_CONFIRM
+	stty echo
 	if [ "$USER_PASSWORD" != "$PASSWORD_CONFIRM" ]; then
 		echo "Wrong passwords. Please try again."
 		ask_password $1
@@ -272,7 +277,7 @@ prompt_all() {
 	qpopd
 
 	echo "Choose locale:"
-	local LOCALE=$(cat /etc/locale.gen | sed '/^#\s/D' | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
+	LOCALE=$(cat /etc/locale.gen | sed '/^#\s/D' | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
 
 	ask_password root
 	ROOT_PASSWORD="$USER_PASSWORD"
@@ -286,6 +291,15 @@ prompt_all() {
 	read MACHINE_HOSTNAME
 }
 
+post_install() {
+	curl -sL "$POST_INSTALL_SCRIPT" -o post-install.sh
+	mv post-install /mnt/root
+	chmod +x /mnt/root
+	echo -n "Ready for post-install script. Press any key to continue..."
+	read dummy
+	right_chroot /root/post-install.sh
+}
+
 configure() {
 	print_phase "System configuration"
 
@@ -294,11 +308,6 @@ configure() {
 	setup_grub
 	setup_users
 	setup_network
-
-	umount -R /mnt
-	echo -n "Ready to reboot. Press any key to continue..."
-	read dummy
-	reboot
 }
 
 main() {
@@ -306,6 +315,12 @@ main() {
 	partition
 	install_base
 	configure
+	post_install
+
+	umount -R /mnt
+	echo -n "Ready to reboot. Press any key to continue..."
+	read dummy
+	reboot
 }
 
 main

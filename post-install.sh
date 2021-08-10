@@ -432,7 +432,8 @@ install_packages() {
 
 main() {
 	#install_packages
-	configure_doas
+	#configure_doas
+	echo "POST INSTALL TEST"
 }
 
 main
