@@ -1,4 +1,5 @@
 #!/bin/sh
+shopt -s 
 set -e
 
 qpushd() {
