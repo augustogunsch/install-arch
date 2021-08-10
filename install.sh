@@ -1,5 +1,5 @@
 #!/bin/sh
-shopt -s 
+shopt -s expand_aliases
 set -e
 
 qpushd() {
@@ -73,7 +73,7 @@ readonly UEFI
 if [ "$DISTRO" = "arch" ]; then
 	alias chroot="arch-chroot"
 	alias fstabgen="genfstab"
-	alias basestrap="pacstap"
+	alias basestrap="pacstrap"
 fi
 
 print_phase() {
