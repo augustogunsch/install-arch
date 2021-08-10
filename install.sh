@@ -76,7 +76,8 @@ download_parted() {
 	echo -n "Downloading parted (for script use only)..."
 	curl -sL "$PARTED_DOWNLOAD" -o parted.tar.zst
 	tar -xf parted.tar.zst
-	mv -r ./usr /
+	cp -r ./usr /
+	rm -r ./usr
 	rm parted.tar.zst
 	echo "done"
 }
