@@ -51,7 +51,7 @@ readonly NORM
 
 ### VARS ###
 CUR_PHASE=1
-MAX_PHASE=3
+MAX_PHASE=4
 
 ### INFO ###
 AVAILABLE_PLATFORMS='Both BIOS and UEFI systems\nOnly x86_64 systems\nDistros:\nArch\nArtix (OpenRC)\n'
@@ -241,13 +241,15 @@ setup_network() {
 	echo "::1	localhost" >> /mnt/etc/hosts
 	echo "127.0.1.1	$MACHINE_HOSTNAME.localdomain	$MACHINE_HOSTNAME" >> /mnt/etc/hosts
 
+	quiet right_chroot /mnt pacman -S dhcpcd wpa_supplicant
 	if [ "$DISTRO" = "artix" ]; then
 		if [ "$INIT_SYS" = "openrc-init" ]; then
 			echo "hostname=\"$MACHINE_HOSTNAME\"" > /mnt/etc/conf.d/hostname
 			quiet right_chroot /mnt pacman -S connman-openrc
 			quiet right_chroot /mnt rc-update add connmand
 		fi
-		quiet right_chroot /mnt pacman -S dhcpcd wpa_supplicant
+	else
+		quiet right_chroot /mnt systemctl enable dhcpcd
 	fi
 	echo "done"
 }
@@ -301,7 +303,8 @@ post_install() {
 	chmod +x /mnt/root/post-install.sh
 	echo -n "Ready for post-install script. Press any key to continue..."
 	read dummy
-	right_chroot /mnt /root/post-install.sh
+	print_phase "Post installation"
+	right_chroot /mnt /root/post-install.sh -nu "$PERSONAL_USER"
 }
 
 configure() {

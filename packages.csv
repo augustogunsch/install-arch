@@ -1,28 +1,42 @@
-,cmake
-,picom
-,networkmanager
-,qutebrowser
-,unclutter
-,lxsession
-,mpv
-,mupdf
-,fzf
-,go
-,unzip
-,feh
-,openssh
-,git
-,scrot
-,tmux
-,zsh
-,libxinerama
-,xorg-server
-,xorg-xinit
-,man
-,pulseaudio
-,pulseaudio-alsa
-,pulsemixer
-,libnotify
-,dunst
-,xorg-xsetroot
-,pamixer
+PAC,alsa-utils,Utilities for ALSA
+PAC,clang,C compiler
+PAC,cmake,Meta-build system
+PAC,cmus,Terminal music player
+AUR,compiledb,Utility for generating compile_commands.json from Makefile
+FUN,install_dash,
+FUN,install_doas,
+PAC,dunst,Notification daemon
+SRC,https://github.com/augustogunsch/dmenu,Graphical dynamic menu
+SRC,https://github.com/augustogunsch/dwm,Tiling window manager
+SRC,https://github.com/augustogunsch/dwm-bar,Dwm status bar
+PAC,feh,Image viewer
+PAC,firejail,Sandbox program
+PAC,fzf,Fuzzy finder
+PAC,gcc,C compiler
+PAC,git,Version control system
+PAC,go,Go compiler
+PAC,gvim,Text editor
+PAC,libnotify,Implementation of the Desktop Notifications Specification
+PAC,libxinerama,X11 extension which provides support for extending a desktop across multiple displays
+PAC,lxsession,Graphical authentication agent
+PAC,man,Interface to system manuals
+PAC,mpv,Media player
+PAC,mupdf,Lightweight PDF viewer
+PAC,openssh,Secure shell
+PAC,picom,X11 compositor
+PAC,polkit,Toolkit for handling the policy that allows unprivileged processes to speak to privileged ones
+PAC,python3,Python 3 interpreter
+PAC,qutebrowser,Web browser inspired with vi-styled keybindings
+PAC,scrot,Screenshot-taking program
+SRC,https://github.com/augustogunsch/st,Terminal emulator
+PAC,thunar,Graphical file manager
+PAC,tmux,Terminal multiplexer
+PAC,unclutter,Program that hides the cursos if idle
+PAC,unzip,ZIP file extractor
+PAC,xdotool,Utility for automating X11 tasks
+PAC,xorg-server,X11 server
+PAC,xorg-xinit,X11 starter
+PAC,xorg-xsetroot,X11 utility to set wallpapers
+AUR,yay,AUR helper
+PAC,zathura,PDF viewer with vi-styled keybindings
+PAC,zsh,Shell

@@ -13,8 +13,17 @@ quiet() {
 	local DUMMY
 	set +e
 	DUMMY=$($@ 2>&1 > /dev/null)
+	if [ $? -ne 0 ]; then
+		echo "$DUMMY"
+		set -e
+		return 1
+	fi
 	set -e
 }
+
+### URLs ###
+DOTFILES="https://github.com/augustogunsch/dotfiles"
+PACKAGES_URL="https://raw.githubusercontent.com/augustogunsch/install-arch/master/packages.csv"
 
 ### COLORS ###
 RED='\033[0;31m'
@@ -39,11 +48,11 @@ USER_OUT=""
 PACMAN_CONF="/etc/pacman.conf"
 PACMAN_TEMP_CONF="/tmp/pacman.conf"
 DOAS_CONF="/etc/doas.conf"
-DISTRO=$(cat /etc/os-release | sed -nE 's/^ID=(.*)/\1/p')
+DISTRO=$(sed -nE 's/^ID=(.*)/\1/p' < /etc/os-release)
 INIT_SYS=$(basename $(readlink /bin/init))
 DEFAULT_INCLUDE='/etc/pacman.d/mirrorlist'
 if [ "$DISTRO" != "arch" -a "$DISTRO" != "artix" ]; then
-	echo "Error: $(lsb_release -ds) not supported"
+	echo "Error: $DISTRO not supported"
 	usage
 fi
 readonly PACMAN_CONF
@@ -106,8 +115,8 @@ shift $((OPTIND-1))
 [ -z "$INSTALL_USER" ] && [ "$INSTALL" != "PACKAGES" ] && echo "Error: <user> required" && usage
 
 check_user() {
-	HOMEDIR="$(cat /etc/passwd | awk -F: '$1 ~ /^'$1'$/ {print $6}')"
-	[ -z "$HOMEDIR" ] && echo "Error: User $1 does not exist" && return 1
+	HOME_DIR="$(awk -F: '$1 ~ /^'$1'$/ {print $6}' < /etc/passwd)"
+	[ -z "$HOME_DIR" ] && echo "Error: User $1 does not exist" && return 1
 	return 0
 }
 
@@ -139,7 +148,7 @@ prompt_user() {
 if [ ! $NO_CONFIRM ]; then
 	echo "${BOLD}Please confirm operation:${NORM}"
 	echo -ne "Installing ${LGREEN}${INSTALL@L}${NC}"
-	[ -n "$INSTALL_USER" ] && echo -ne " for ${LGREEN}$INSTALL_USER ($HOMEDIR)${NC}"
+	[ -n "$INSTALL_USER" ] && echo -ne " for ${LGREEN}$INSTALL_USER ($HOME_DIR)${NC}"
 	printf "\n"
 	echo -n "Proceed with installation? [y/N] "
 	read ans
@@ -158,27 +167,44 @@ print_phase() {
 }
 
 install_aur() {
-	dir="$HOMEDIR/$1"
-	echo -n "Installing $1... "
-	quiet sudo -u "$1" git clone -q "https://aur.archlinux.org/$1.git" "$dir"
-	qpushd -q "$dir"
-	quiet sudo -u "$1" makepkg -si --noconfirm
-	qpopd -q
-	rm -rf "$1"
+	[ -z "$INSTALL_USER" ] && return 0
+	if [ -z "$2" ]; then
+		echo -n "Installing $1 from AUR..."
+	else
+		echo "Installing $1 from AUR. Description:"
+		echo "$2"
+	fi
+	local dir="$HOME_DIR/$1"
+	quiet sudo -u "$INSTALL_USER" git clone -q "https://aur.archlinux.org/$1.git" "$dir"
+	qpushd "$dir"
+	quiet sudo -u "$INSTALL_USER" makepkg -si --noconfirm
+	qpopd
+	rm -rf "$dir"
 	echo "done"
 }
 
 remove() {
 	echo -n "Removing $1..."
 	set +e
-	pacman -Rs --noconfirm $1 2>&1 > /dev/null
+	quiet pacman -Rs --noconfirm $1
 	set -e
 	echo "done"
 }
 
 install() {
-	echo -n "Installing $1..."
-	pacman -Sq --needed --noconfirm $1 2>&1 > /dev/null
+	if [ -z "$2" ]; then
+		echo -n "Installing $1..."
+	else
+		echo "Installing $1. Description:"
+		echo "$2"
+	fi
+	set +e
+	quiet pacman -Sq --needed --noconfirm $1
+	if [ $? -ne 0 ]; then
+		set -e
+		quiet pacman -Sqyu --needed --noconfirm $1
+	fi
+	set -e
 	echo "done"
 }
 
@@ -375,6 +401,7 @@ append_line() {
 }
 
 configure_doas() {
+	[ -e /bin/doas ] || return 0
 	echo "Configuring doas..."
 	prompt_user 'doas will be configured'
 	local DOAS_USER="$USER_OUT"
@@ -386,20 +413,17 @@ configure_doas() {
 }
 
 install_doas() {
-	#install_aur requires sudo or doas
-	set +e
-	prompt "Do you want to install doas (will remove sudo and forbid it in $PACMAN_CONF)?"
-	if [ $? -eq 1 ]; then
-		set -e
-		install sudo
-		install_aur doas
-		remove sudo
-		pacman_opt IgnorePkg sudo
-		pacman_opt NoUpgrade sudo
-		link /bin/doas /bin/sudo
-		configure_doas
-	fi
-	set -e
+	remove sudo
+	install opendoas "Sudo alternative"
+	pacman_opt IgnorePkg sudo
+	pacman_opt NoUpgrade bin/sudo
+	link /bin/doas /bin/sudo
+}
+
+install_dash() {
+	install dash "Lightweight POSIX shell"
+	pacman_opt NoUpgrade bin/sh
+	link /bin/dash /bin/sh
 }
 
 repos() {
@@ -416,25 +440,109 @@ repos() {
 	fi
 }
 
-install_packages() {
-	if [ "$INSTALL" != "DOTFILES" ]; then
-		print_phase "Package installation"
-		repos
-		
-		echo -n "Upgrading system... "
-		pacman -Sqyu --noconfirm 2>&1 > /dev/null
-		echo "done"
+# pwd must be the home dir of the user
+configure_vim_for() {
+	echo -n "Downloading vim-plug for $1..."
+	quiet sudo -u "$1" curl -sfLo .vim/autoload/plug.vim --create-dirs \
+	    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+	echo "done"
 
-		install_doas
+	echo -n "Installing vim plugins for $1..."
+	quiet sudo -u "$1" vim -E -c PlugInstall -c qall
+	echo "done"
+}
 
-		install_aur yay
+# pwd must be the home dir of the user
+install_dotfiles_for() {
+	echo -n "Downloading dotfiles for $1 (~/dotfiles)..."
+	quiet sudo -u "$1" git clone "$DOTFILES" ./dotfiles
+	echo "done"
+
+	echo -n "Linking dotfiles..."
+	qpushd "./dotfiles"
+	quiet sudo -u "$1" ./install.sh
+	echo "done"
+	qpopd
+}
+
+install_dotfiles() {
+	[ "$INSTAL" = "PACKAGES" ] && return 0
+
+	print_phase "Dotfile installation"
+	install git
+
+	qpushd "$HOME_DIR"
+	install_dotfiles_for "$INSTALL_USER"
+	configure_vim_for "$INSTALL_USER"
+	qpopd
+
+	qpushd "$HOME"
+	install_dotfiles_for "root"
+	configure_vim_for "root"
+	qpopd
+
+	change_shells
+}
+
+install_src() {
+	# source code is stored in /root/builds
+	qpushd "$HOME"
+	local PKG_NAME="$(basename "$1")"
+	if [ -z "$2" ]; then
+		echo -n "Installing $PKG_NAME from source..."
+	else
+		echo "Installing $PKG_NAME from source. Description:"
+		echo "$2"
 	fi
+	quiet git clone -q "$1"
+	qpushd "$PKG_NAME"
+	make
+	make install
+	qpopd
+	qpopd
+}
+
+install_loop() {
+	[ -f "packages.csv" ] || curl -sL "$PACKAGES_URL" -o "packages.csv"
+	while IFS=, read -r method package description; do
+		case "$method" in
+			"PAC") install "$package" "$description";;
+			"AUR") install_aur "$package" "$description";;
+			"SRC") install_src "$package" "$description";;
+			"FUN") $package ;;
+		esac
+	done < packages.csv
+}
+
+install_packages() {
+	[ "$INSTALL" = "DOTFILES" ] && return 0
+
+	print_phase "Package installation"
+
+	echo -n "Upgrading system..."
+	quiet pacman -Sqyu --noconfirm
+	echo "done"
+
+	install_doas
+	install_dash
+
+	install_loop
+}
+
+change_shells() {
+	echo -n "Configuring zsh..."
+	chsh -s /bin/zsh "root"
+	chsh -s /bin/zsh "$INSTALL_USER"
+	sed 's/^export PROMPT=.*/export PROMPT='"'"'%B%F{166}[%F{172}%n@%m %F{white}%~%F{166}]$%b%f '"'"'/' < "$HOME/.zshrc" > /tmp/zshrc
+	mv /tmp/zshrc "$HOME/.zshrc"
+	echo "done"
 }
 
 main() {
-	#install_packages
-	#configure_doas
-	echo "POST INSTALL TEST"
+	repos
+	install_packages
+	install_dotfiles
+	configure_doas
 }
 
 main
