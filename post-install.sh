@@ -503,8 +503,8 @@ install_src() {
 	fi
 	quiet git clone -q "$1"
 	qpushd "$PKG_NAME"
-	make
-	make install
+	quiet make
+	quiet make install
 	qpopd
 	qpopd
 	echo "done"
