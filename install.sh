@@ -142,7 +142,7 @@ prompt_drive() {
 
 partition() {
 	print_phase "Disk partitioning"
-	[ -e /bin/parted ] || download_parted
+	[ -f /bin/parted ] || download_parted
 
 	echo -n "Partitioning drive..."
 	parted --script "$DRIVE_TARGET" \

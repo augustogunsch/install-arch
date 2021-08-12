@@ -401,7 +401,7 @@ append_line() {
 }
 
 configure_doas() {
-	[ -e /bin/doas ] || return 0
+	[ -f /bin/doas ] || return 0
 	echo "Configuring doas..."
 	prompt_user 'doas will be configured'
 	local DOAS_USER="$USER_OUT"
