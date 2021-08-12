@@ -26,7 +26,7 @@ PAC,openssh,Secure shell
 PAC,picom,X11 compositor
 PAC,polkit,Toolkit for handling the policy that allows unprivileged processes to speak to privileged ones
 PAC,python3,Python 3 interpreter
-PAC,qutebrowser,Web browser inspired with vi-styled keybindings
+PAC,qutebrowser,Web browser with vi-styled keybindings
 PAC,scrot,Screenshot-taking program
 SRC,https://github.com/augustogunsch/st,Terminal emulator
 PAC,thunar,Graphical file manager
