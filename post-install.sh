@@ -191,7 +191,7 @@ install_aur() {
 	done
 
 	quiet sudo -u nobody makepkg --noconfirm
-	quiet pacman -U --noconfirm "$1*.pkg.tar*"
+	quiet pacman -U --noconfirm $1*.pkg.tar*
 	qpopd
 	rm -rf "$1"
 	qpopd
