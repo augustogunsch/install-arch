@@ -145,13 +145,30 @@ partition() {
 	[ -f /bin/parted ] || download_parted
 
 	echo -n "Partitioning drive..."
-	parted --script "$DRIVE_TARGET" \
-	mklabel gpt \
-	mkpart swap ext4 1MiB 4GiB \
-	mkpart boot ext4 4GiB 5Gib \
-	mkpart root ext4 5GiB 100%
-	[ $UEFI -eq 0 ] && parted --script "$DRIVE_TARGET" set 2 bios_grub on
-	echo "done"
+	if [ $UEFI -eq 0 ]; then
+	# Legacy
+		parted --script "$DRIVE_TARGET" \
+		mklabel msdos \
+		mkpart swap linux-swap 0% 4GiB \
+		mkpart root ext4 4GiB 100%
+		echo "done"
+	else
+	# EFI
+		parted --script "$DRIVE_TARGET" \
+		mklabel gpt \
+		mkpart swap linux-swap 0% 4GiB \
+		mkpart boot fat32 4GiB 5Gib \
+		mkpart root ext4 5GiB 100% \
+		set 2 esp on
+		echo "done"
+
+		echo -n "Configuring BOOT partition..."
+		quiet mkfs.fat -F 32 "$DRIVE_TARGET"2
+		fatlabel "$DRIVE_TARGET"2 BOOT
+		mkdir /mnt/boot
+		mount "$DRIVE_TARGET"2 /mnt/boot
+		echo "done"
+	fi
 
 	echo -n "Configuring SWAP partition..."
 	quiet mkswap -L SWAP "$DRIVE_TARGET"1
@@ -161,17 +178,6 @@ partition() {
 	echo -n "Configuring ROOT partition..."
 	quiet mkfs.ext4 -L ROOT "$DRIVE_TARGET"3
 	quiet mount "$DRIVE_TARGET"3 /mnt
-	echo "done"
-
-	echo -n "Configuring BOOT partition..."
-	if [ $UEFI -eq 1 ]; then
-		quiet mkfs.fat -F 32 "$DRIVE_TARGET"2
-		fatlabel "$DRIVE_TARGET"2 BOOT
-	else
-		quiet mkfs.ext4 -L BOOT "$DRIVE_TARGET"2
-	fi
-	mkdir /mnt/boot
-	mount "$DRIVE_TARGET"2 /mnt/boot
 	echo "done"
 }
 
