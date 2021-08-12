@@ -412,6 +412,7 @@ configure_doas() {
 	prompt_user 'doas will be configured'
 	local DOAS_USER="$USER_OUT"
 	if [ -n "$DOAS_USER" ]; then
+		touch "$DOAS_CONF"
 		append_line $DOAS_CONF "permit persist $DOAS_USER as root"
 		append_line $DOAS_CONF "permit nopass $DOAS_USER as root cmd pacman args -Syu"
 		append_line $DOAS_CONF "permit nopass $DOAS_USER as root cmd pacman args -Syyu"
