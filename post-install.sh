@@ -193,16 +193,16 @@ remove() {
 
 install() {
 	if [ -z "$2" ]; then
-		echo -n "Installing $1..."
+		echo -n "Installing ${LGREEN}$1${NC}..."
 	else
-		echo "Installing $1. Description:"
-		echo "$2"
+		echo -n "Installing ${LGREEN}$1${NC} ($2)..."
 	fi
 	set +e
 	quiet pacman -Sq --needed --noconfirm $1
 	if [ $? -ne 0 ]; then
 		set -e
-		quiet pacman -Sqyu --needed --noconfirm $1
+		quiet pacman -Sy
+		quiet pacman -Sq --needed --noconfirm $1
 	fi
 	set -e
 	echo "done"
@@ -431,6 +431,7 @@ repos() {
 	if [ "$DISTRO" = "artix" ]; then
 		pacman_repo lib32
 		local ARCH_REPOS="$DEFAULT_INCLUDE-arch"
+		quiet pacman -Sy
 		install archlinux-mirrorlist
 		pacman_repo extra $ARCH_REPOS
 		pacman_repo community $ARCH_REPOS
@@ -438,6 +439,14 @@ repos() {
 	else
 		pacman_repo multilib
 	fi
+	echo -n "Downloading package database..."
+	quiet pacman -Sy
+	echo "done"
+
+	echo -n "Configuring pacman keyring..."
+	quiet pacman-key --init
+	quiet pacman-key --populate archlinux
+	echo "done"
 }
 
 # pwd must be the home dir of the user

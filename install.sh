@@ -144,16 +144,20 @@ partition() {
 	print_phase "Disk partitioning"
 	[ -f /bin/parted ] || download_parted
 
+	local rootN
+
 	echo -n "Partitioning drive..."
 	if [ $UEFI -eq 0 ]; then
 	# Legacy
+		rootN=2
 		parted --script "$DRIVE_TARGET" \
 		mklabel msdos \
-		mkpart swap linux-swap 0% 4GiB \
-		mkpart root ext4 4GiB 100%
+		mkpart primary linux-swap 0% 4GiB \
+		mkpart primary ext4 4GiB 100%
 		echo "done"
 	else
 	# EFI
+		rootN=3
 		parted --script "$DRIVE_TARGET" \
 		mklabel gpt \
 		mkpart swap linux-swap 0% 4GiB \
@@ -176,8 +180,8 @@ partition() {
 	echo "done"
 
 	echo -n "Configuring ROOT partition..."
-	quiet mkfs.ext4 -L ROOT "$DRIVE_TARGET"3
-	quiet mount "$DRIVE_TARGET"3 /mnt
+	quiet mkfs.ext4 -L ROOT "$DRIVE_TARGET"$rootN
+	quiet mount "$DRIVE_TARGET"$rootN /mnt
 	echo "done"
 }
 
