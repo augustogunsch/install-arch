@@ -72,7 +72,7 @@ readonly INIT_SYS
 readonly UEFI
 
 right_chroot() {
-	[ "$DISTRO" = "arch" ] && arch-chroot $@ || chroot $@
+	[ "$DISTRO" = "arch" ] && arch-chroot $@ || artix-chroot $@
 }
 
 right_fstabgen() {
@@ -201,7 +201,7 @@ install_base() {
 }
 
 set_timezone() {
-	ln -sf "/mnt/usr/share/zoneinfo/$TIMEZONE" /mnt/etc/localtime
+	ln -sf "/usr/share/zoneinfo/$TIMEZONE" /mnt/etc/localtime
 	quiet right_chroot /mnt hwclock --systohc
 }
 
@@ -229,7 +229,14 @@ setup_grub() {
 
 setup_users() {
 	echo -n "Configuring users..."
-	right_chroot /mnt useradd -m "$PERSONAL_USER"
+
+	set +e
+	# There might be a group with the user's name
+	awk -F: '$1 ~ /^'$PERSONAL_USER'$/ { exit 1 }' /etc/group
+	[ $? -eq 0 ] && right_chroot /mnt useradd --badnames -m "$PERSONAL_USER" || \
+		right_chroot /mnt useradd --badnames -m -g "$PERSONAL_USER" "$PERSONAL_USER"
+	set -e
+
 	echo -e "root:$ROOT_PASSWORD\n$PERSONAL_USER:$PERSONAL_PASSWORD" | chpasswd -R /mnt
 	echo "done"
 }
@@ -241,11 +248,11 @@ setup_network() {
 	echo "::1	localhost" >> /mnt/etc/hosts
 	echo "127.0.1.1	$MACHINE_HOSTNAME.localdomain	$MACHINE_HOSTNAME" >> /mnt/etc/hosts
 
-	quiet right_chroot /mnt pacman -S dhcpcd wpa_supplicant
+	quiet right_basestrap /mnt dhcpcd wpa_supplicant
 	if [ "$DISTRO" = "artix" ]; then
 		if [ "$INIT_SYS" = "openrc-init" ]; then
 			echo "hostname=\"$MACHINE_HOSTNAME\"" > /mnt/etc/conf.d/hostname
-			quiet right_chroot /mnt pacman -S connman-openrc
+			quiet right_basestrap /mnt connman-openrc
 			quiet right_chroot /mnt rc-update add connmand
 		fi
 	else

@@ -115,7 +115,7 @@ shift $((OPTIND-1))
 [ -z "$INSTALL_USER" ] && [ "$INSTALL" != "PACKAGES" ] && echo "Error: <user> required" && usage
 
 check_user() {
-	HOME_DIR="$(awk -F: '$1 ~ /^'$1'$/ {print $6}' < /etc/passwd)"
+	HOME_DIR="$(awk -F: '$1 ~ /^'$1'$/ {print $6}' /etc/passwd)"
 	[ -z "$HOME_DIR" ] && echo "Error: User $1 does not exist" && return 1
 	return 0
 }
