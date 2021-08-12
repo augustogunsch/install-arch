@@ -20,6 +20,7 @@ PAC,lxsession,Graphical authentication agent
 PAC,man,Interface to system manuals
 PAC,mpv,Media player
 PAC,mupdf,Lightweight PDF viewer
+AUR,nerd-fonts-hack,Monospace font
 PAC,opendoas,Sudo alternative
 PAC,openssh,Secure shell
 PAC,picom,X11 compositor
