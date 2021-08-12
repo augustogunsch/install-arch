@@ -224,6 +224,17 @@ set_locale() {
 	echo "export LANG=\"en_US.UTF-8\"" > /mnt/etc/locale.conf
 	echo "export LC_COLLATE=\"C\"" >> /mnt/etc/locale.conf
 	echo "done"
+
+	echo -n "Setting keyboard layout..."
+	echo "keymap=\"$XKBD_LAYOUT\"" > /etc/conf.d/keymaps
+	echo "KEYMAP=\"$KBD_LAYOUT\"" > /etc/vconsole.conf
+	local XKBD_CONF="/etc/X11/xorg.conf.d/00-keyboard.conf"
+	echo "Section \"InputClass\"" > $XKBD_CONF
+	echo "	Identifier \"system-keyboard\"" >> $XKBD_CONF
+	echo "	MatchIsKeyboard \"on\"" >> $XKBD_CONF
+	echo "	Option \"XkbLayout\" \"$XKBD_LAYOUT\"" >> $XKBD_CONF
+	echo "EndSection" >> $XKBD_CONF
+	echo "done"
 }
 
 setup_grub() {
@@ -301,6 +312,16 @@ prompt_all() {
 
 	echo "Choose locale:"
 	LOCALE=$(sed '/^#\s/D' < /etc/locale.gen | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
+
+	qpushd /usr/share/kbd/keymaps
+	local layouts="$(ls -1 **/*.map.gz | sed -E 's/^(.*)\.map\.gz$/\1/')"
+	qpopd
+	echo "Choose console keyboard layout:"
+	KBD_LAYOUT="$(basename $(echo -e "$layouts" | fzf --layout=reverse --height=20))"
+
+	echo "Choose X11 keyboard layout:"
+	XKBD_LAYOUT="$(awk 'BEGIN {toprint=0} $0 ~ /^[[:blank:]]*$/ {toprint=0} $2 ~ /layout/ {toprint=1; next} {if (toprint) {print $1} }' \
+		/usr/share/X11/xkb/rules/base.lst | head -n -1 | fzf --layout=reverse --height=20)"
 
 	ask_password root
 	ROOT_PASSWORD="$USER_PASSWORD"
