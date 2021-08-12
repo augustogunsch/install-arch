@@ -30,6 +30,9 @@ ultra_quiet() {
 ### FORCE ROOT ###
 [ $(whoami) != "root" ] && echo "Please run as root" && exit 1
 
+### CD TO MY DIR ###
+cd "$(basename "$0")"
+
 ### URLs ###
 FZF_DOWNLOAD="$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep linux_amd64 | sed -nE 's/^\s*"browser_download_url":\s*"(.*)"\s*$/\1/p')"
 PARTED_DOWNLOAD="https://archlinux.org/packages/extra/x86_64/parted/download"

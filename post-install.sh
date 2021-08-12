@@ -21,6 +21,9 @@ quiet() {
 	set -e
 }
 
+### CD TO MY DIR ###
+cd "$(basename "$0")"
+
 ### URLs ###
 DOTFILES="https://github.com/augustogunsch/dotfiles"
 PACKAGES_URL="https://raw.githubusercontent.com/augustogunsch/install-arch/master/packages.csv"
