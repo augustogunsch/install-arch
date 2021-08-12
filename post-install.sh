@@ -86,6 +86,9 @@ exclusive()
 	usage
 }
 
+NO_CONFIRM=0
+VERBOSE=0
+
 while getopts ":nvhdpu:" c; do
 	case $c in
 		d) 
@@ -100,8 +103,8 @@ while getopts ":nvhdpu:" c; do
 		u) 
 			[ "$INSTALL" = "PACKAGES" ] && exclusive '-p' '<user>'	
 			set_var INSTALL_USER $OPTARG "-u" ;;
-		n) NO_CONFIRM=true ;;
-		v) VERBOSE=true ;;
+		n) NO_CONFIRM=1 ;;
+		v) VERBOSE=1 ;;
 		h) usage ;;
 		?) echo "Unknown option -$OPTARG"; usage ;;
 	esac
@@ -128,10 +131,11 @@ if [ -n "$INSTALL_USER" ]; then
 fi
 
 prompt_user() {
+	[ $NO_CONFIRM -eq 1 ] && USER_OUT="$INSTALL_USER" && return 0
 	echo -n "Please type user for whom $1 (leave blank to use same user as with dotfiles or to skip step): "
 	local user
 	read user
-	[ -z "$user" ] && USER_OUT="$INSTALL_USER" && return
+	[ -z "$user" ] && USER_OUT="$INSTALL_USER" && return 0
 	set +e
 	USER_OUT="$user"
 	check_user "$user"
@@ -145,7 +149,7 @@ prompt_user() {
 
 ### ASK FOR CONFIRMATION ###
 
-if [ ! $NO_CONFIRM ]; then
+if [ $NO_CONFIRM -eq 0 ]; then
 	echo "${BOLD}Please confirm operation:${NORM}"
 	echo -ne "Installing ${LGREEN}${INSTALL@L}${NC}"
 	[ -n "$INSTALL_USER" ] && echo -ne " for ${LGREEN}$INSTALL_USER ($HOME_DIR)${NC}"
@@ -209,7 +213,7 @@ install() {
 
 prompt() {
 	echo -n "$1 [Y/n] "
-	[ $NO_CONFIRM ] && echo "y" && return 1
+	[ $NO_CONFIRM -eq 1 ] && echo "y" && return 1
 	read ans
 	case $ans in
 		n|N) return 0 ;;
