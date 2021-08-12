@@ -58,6 +58,8 @@ if [ "$DISTRO" != "arch" -a "$DISTRO" != "artix" ]; then
 	echo "Error: $DISTRO not supported"
 	usage
 fi
+AUR_BUILD_DIR="/tmp/aur-build"
+readonly AUR_BUILD_DIR
 readonly PACMAN_CONF
 readonly PACMAN_TEMP_CONF
 readonly DOAS_CONF
@@ -174,18 +176,25 @@ print_phase() {
 }
 
 install_aur() {
-	[ -z "$INSTALL_USER" ] && return 0
 	if [ -z "$2" ]; then
 		echo -ne "Installing ${LGREEN}$1${NC} from AUR..."
 	else
 		echo -ne "Installing ${LGREEN}$1${NC} from AUR ($2)..."
 	fi
-	local dir="$HOME_DIR/$1"
-	quiet sudo -u "$INSTALL_USER" git clone -q "https://aur.archlinux.org/$1.git" "$dir"
-	qpushd "$dir"
-	quiet sudo -u "$INSTALL_USER" makepkg -si --noconfirm
+	qpushd "$AUR_BUILD_DIR"
+	quiet sudo -u nobody git clone -q "https://aur.archlinux.org/$1.git" "$1"
+	qpushd "$1"
+
+	#dependencies
+	for pkg in $(sudo -u nobody makepkg --printsrcinfo | awk '$1 ~ /^makedepends$/ {print $3}'); do
+		install $pkg
+	done
+
+	quiet sudo -u nobody makepkg --noconfirm
+	quiet pacman -U --noconfirm "$1*.pkg.tar*"
 	qpopd
-	rm -rf "$dir"
+	rm -rf "$1"
+	qpopd
 	echo "done"
 }
 
@@ -550,11 +559,26 @@ change_shells() {
 	echo "done"
 }
 
+aur_build_setup() {
+	echo -n "Setting up temporary build directory ($AUR_BUILD_DIR)..."
+	mkdir -p "$AUR_BUILD_DIR"
+	chown nobody:nobody "$AUR_BUILD_DIR"
+	echo "done"
+}
+
+aur_build_remove() {
+	echo -n "Removeing temporary build directory..."
+	rm -rf "$AUR_BUILD_DIR"
+	echo "done"
+}
+
 main() {
 	repos
+	aur_build_setup
 	install_packages
 	install_dotfiles
 	configure_doas
+	aur_build_remove
 }
 
 main
