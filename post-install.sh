@@ -169,9 +169,9 @@ print_phase() {
 install_aur() {
 	[ -z "$INSTALL_USER" ] && return 0
 	if [ -z "$2" ]; then
-		echo -n "Installing ${LGREEN}$1${NC} from AUR..."
+		echo -ne "Installing ${LGREEN}$1${NC} from AUR..."
 	else
-		echo -n "Installing ${LGREEN}$1${NC} from AUR ($2)..."
+		echo -ne "Installing ${LGREEN}$1${NC} from AUR ($2)..."
 	fi
 	local dir="$HOME_DIR/$1"
 	quiet sudo -u "$INSTALL_USER" git clone -q "https://aur.archlinux.org/$1.git" "$dir"
@@ -192,9 +192,9 @@ remove() {
 
 install() {
 	if [ -z "$2" ]; then
-		echo -n "Installing ${LGREEN}$1${NC}..."
+		echo -ne "Installing ${LGREEN}$1${NC}..."
 	else
-		echo -n "Installing ${LGREEN}$1${NC} ($2)..."
+		echo -ne "Installing ${LGREEN}$1${NC} ($2)..."
 	fi
 	set +e
 	quiet pacman -Sq --needed --noconfirm $1
@@ -493,9 +493,9 @@ install_src() {
 	qpushd "$HOME"
 	local PKG_NAME="$(basename "$1")"
 	if [ -z "$2" ]; then
-		echo -n "Installing ${LGREEN}$PKG_NAME${NC} from source..."
+		echo -ne "Installing ${LGREEN}$PKG_NAME${NC} from source..."
 	else
-		echo -n "Installing ${LGREEN}$PKG_NAME${NC} from source ($2)..."
+		echo -ne "Installing ${LGREEN}$PKG_NAME${NC} from source ($2)..."
 	fi
 	quiet git clone -q "$1"
 	qpushd "$PKG_NAME"
