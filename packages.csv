@@ -4,7 +4,6 @@ PAC,cmake,Meta-build system
 PAC,cmus,Terminal music player
 AUR,compiledb,Utility for generating compile_commands.json from Makefile
 FUN,install_dash,
-FUN,install_doas,
 PAC,dunst,Notification daemon
 SRC,https://github.com/augustogunsch/dmenu,Graphical dynamic menu
 SRC,https://github.com/augustogunsch/dwm,Tiling window manager
@@ -13,7 +12,6 @@ PAC,feh,Image viewer
 PAC,firejail,Sandbox program
 PAC,fzf,Fuzzy finder
 PAC,gcc,C compiler
-PAC,git,Version control system
 PAC,go,Go compiler
 PAC,gvim,Text editor
 PAC,libnotify,Implementation of the Desktop Notifications Specification
@@ -22,6 +20,7 @@ PAC,lxsession,Graphical authentication agent
 PAC,man,Interface to system manuals
 PAC,mpv,Media player
 PAC,mupdf,Lightweight PDF viewer
+PAC,opendoas,Sudo alternative
 PAC,openssh,Secure shell
 PAC,picom,X11 compositor
 PAC,polkit,Toolkit for handling the policy that allows unprivileged processes to speak to privileged ones

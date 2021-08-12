@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 qpushd() {
@@ -217,9 +217,9 @@ set_timezone() {
 
 set_locale() {
 	echo -n "Configuring locale..."
-	cat /mnt/etc/locale.gen | sed "s/^#$LOCALE/$LOCALE/" > /tmp/locale.gen
-	mv /tmp/locale.gen /mnt/etc/locale.gen
-	quiet right_chroot /mnt locale-gen
+	sed "s/^#$LOCALE/$LOCALE/" < /mnt/etc/locale.gen  > /etc/locale.gen
+	locale-gen
+	cp -f /usr/lib/locale/locale-archive /mnt/usr/lib/locale/locale-archive
 
 	echo "export LANG=\"en_US.UTF-8\"" > /mnt/etc/locale.conf
 	echo "export LC_COLLATE=\"C\"" >> /mnt/etc/locale.conf
@@ -300,7 +300,7 @@ prompt_all() {
 	qpopd
 
 	echo "Choose locale:"
-	LOCALE=$(cat /etc/locale.gen | sed '/^#\s/D' | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
+	LOCALE=$(sed '/^#\s/D' < /etc/locale.gen | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
 
 	ask_password root
 	ROOT_PASSWORD="$USER_PASSWORD"

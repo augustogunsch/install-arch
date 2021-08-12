@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 qpushd() {
@@ -169,10 +169,9 @@ print_phase() {
 install_aur() {
 	[ -z "$INSTALL_USER" ] && return 0
 	if [ -z "$2" ]; then
-		echo -n "Installing $1 from AUR..."
+		echo -n "Installing ${LGREEN}$1${NC} from AUR..."
 	else
-		echo "Installing $1 from AUR. Description:"
-		echo "$2"
+		echo -n "Installing ${LGREEN}$1${NC} from AUR ($2)..."
 	fi
 	local dir="$HOME_DIR/$1"
 	quiet sudo -u "$INSTALL_USER" git clone -q "https://aur.archlinux.org/$1.git" "$dir"
@@ -401,7 +400,10 @@ append_line() {
 }
 
 configure_doas() {
-	[ -f /bin/doas ] || return 0
+	remove sudo
+	pacman_opt IgnorePkg sudo
+	pacman_opt NoUpgrade bin/sudo
+	link /bin/doas /bin/sudo
 	echo "Configuring doas..."
 	prompt_user 'doas will be configured'
 	local DOAS_USER="$USER_OUT"
@@ -410,14 +412,6 @@ configure_doas() {
 		append_line $DOAS_CONF "permit nopass $DOAS_USER as root cmd pacman args -Syu"
 		append_line $DOAS_CONF "permit nopass $DOAS_USER as root cmd pacman args -Syyu"
 	fi
-}
-
-install_doas() {
-	remove sudo
-	install opendoas "Sudo alternative"
-	pacman_opt IgnorePkg sudo
-	pacman_opt NoUpgrade bin/sudo
-	link /bin/doas /bin/sudo
 }
 
 install_dash() {
@@ -443,6 +437,7 @@ repos() {
 	quiet pacman -Sy
 	echo "done"
 
+	install archlinux-keyring
 	echo -n "Configuring pacman keyring..."
 	quiet pacman-key --init
 	quiet pacman-key --populate archlinux
@@ -498,10 +493,9 @@ install_src() {
 	qpushd "$HOME"
 	local PKG_NAME="$(basename "$1")"
 	if [ -z "$2" ]; then
-		echo -n "Installing $PKG_NAME from source..."
+		echo -n "Installing ${LGREEN}$PKG_NAME${NC} from source..."
 	else
-		echo "Installing $PKG_NAME from source. Description:"
-		echo "$2"
+		echo -n "Installing ${LGREEN}$PKG_NAME${NC} from source ($2)..."
 	fi
 	quiet git clone -q "$1"
 	qpushd "$PKG_NAME"
@@ -509,6 +503,7 @@ install_src() {
 	make install
 	qpopd
 	qpopd
+	echo "done"
 }
 
 install_loop() {
@@ -532,8 +527,8 @@ install_packages() {
 	quiet pacman -Sqyu --noconfirm
 	echo "done"
 
-	install_doas
-	install_dash
+	install sudo
+	install git "Version control system"
 
 	install_loop
 }
