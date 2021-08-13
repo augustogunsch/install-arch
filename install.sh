@@ -230,7 +230,10 @@ set_locale() {
 	cp -f /usr/lib/locale/locale-archive /mnt/usr/lib/locale/locale-archive
 	cp -f /etc/locale.gen /mnt/etc/locale.gen
 
-	echo "export LANG=\"$LOCALE\"" > /mnt/etc/locale.conf
+	local short_locale
+	local encoding
+	read short_locale encoding <<< "$LOCALE"
+	echo "export LANG=\"$short_locale\"" > /mnt/etc/locale.conf
 	echo "done"
 
 	echo -n "Setting keyboard layout..."
