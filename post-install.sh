@@ -198,8 +198,7 @@ install_aur() {
 		echo -ne "Installing ${LGREEN}$1${NC} from AUR ($2)..."
 	fi
 
-	export GOCACHE="$AUR_BUILD_DIR/go"
-	quiet sudo -u nobody makepkg --noconfirm
+	quiet sudo -u nobody GOCACHE="$AUR_BUILD_DIR/go" makepkg --noconfirm
 	quiet pacman -U --noconfirm $1*.pkg.tar*
 	qpopd
 	rm -rf "$1"
