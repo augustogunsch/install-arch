@@ -168,7 +168,7 @@ if [ $NO_CONFIRM -eq 0 ]; then
 fi
 
 ### INSTALLATION ###
-[ $VERBOSE ] && set -x
+[ $VERBOSE -eq 1 ] && set -x
 
 print_phase() {
 	echo -e "${BOLD}${YELLOW}[$CUR_PHASE/$MAX_PHASE] $1 phase${NC}${NORM}"
@@ -186,7 +186,7 @@ install_aur() {
 	qpushd "$1"
 
 	#dependencies
-	for pkg in $(sudo -u nobody makepkg --printsrcinfo | awk '$1 ~ /^makedepends$/ {print $3}'); do
+	for pkg in $(sudo -u nobody makepkg --printsrcinfo | awk '$1 ~ /depends/ {print $3}'); do
 		install $pkg
 	done
 

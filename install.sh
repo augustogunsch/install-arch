@@ -93,6 +93,7 @@ print_phase() {
 }
 
 download_fzf() {
+	[ -f /usr/bin/fzf ] && return 0
 	echo -n "Downloading fzf (for script use only)..."
 	curl -sL "$FZF_DOWNLOAD" -o fzf.tar.gz
 	tar -xf fzf.tar.gz
@@ -102,6 +103,7 @@ download_fzf() {
 }
 
 download_parted() {
+	[ -f /usr/bin/parted ] && return 0
 	echo -n "Downloading parted (for script use only)..."
 	curl -sL "$PARTED_DOWNLOAD" -o parted.tar.zst
 	tar -xf parted.tar.zst
@@ -146,6 +148,9 @@ prompt_drive() {
 
 partition() {
 	print_phase "Disk partitioning"
+	set +e
+	ultra_quiet swapoff -a
+	set -e
 	[ -f /bin/parted ] || download_parted
 
 	local rootN
@@ -222,7 +227,7 @@ set_timezone() {
 set_locale() {
 	echo -n "Configuring locale..."
 	sed "s/^#$LOCALE/$LOCALE/" < /mnt/etc/locale.gen  > /etc/locale.gen
-	locale-gen
+	quiet locale-gen
 	cp -f /usr/lib/locale/locale-archive /mnt/usr/lib/locale/locale-archive
 
 	echo "export LANG=\"en_US.UTF-8\"" > /mnt/etc/locale.conf
@@ -230,15 +235,16 @@ set_locale() {
 	echo "done"
 
 	echo -n "Setting keyboard layout..."
-	echo "KEYMAP=\"$KBD_LAYOUT\"" > /etc/vconsole.conf
+	echo "KEYMAP=\"$KBD_LAYOUT\"" > /mnt/etc/vconsole.conf
 
-	XKBD="$(awk -F: '$1 ~ /^'$KBD_LAYOUT'$/ {print $0; exit 0}' keyboard-map.csv)"
-	XKBD_LAYOUT="$(echo $XKBD | awk -F: '{print $2}')"
-	XKBD_MODEL="$(echo $XKBD | awk -F: '{print $3}')"
-	XKBD_VARIANT="$(echo $XKBD | awk -F: '{print $4}')"
-	XKBD_OPTIONS="$(echo $XKBD | awk -F: '{print $5}')"
-	echo "keymap=\"$XKBD_LAYOUT\"" > /etc/conf.d/keymaps
-	local XKBD_CONF="/etc/X11/xorg.conf.d/00-keyboard.conf"
+	XKBD="$(awk -F, '$1 ~ /^'$KBD_LAYOUT'$/ {print $0; exit 0}' keyboard-map.csv)"
+	XKBD_LAYOUT="$(echo $XKBD | awk -F, '{print $2}')"
+	XKBD_MODEL="$(echo $XKBD | awk -F, '{print $3}')"
+	XKBD_VARIANT="$(echo $XKBD | awk -F, '{print $4}')"
+	XKBD_OPTIONS="$(echo $XKBD | awk -F, '{print $5}')"
+	echo "keymap=\"$XKBD_LAYOUT\"" > /mnt/etc/conf.d/keymaps
+	local XKBD_CONF="/mnt/etc/X11/xorg.conf.d/00-keyboard.conf"
+	mkdir -p $(dirname $XKBD_CONF)
 	echo "Section \"InputClass\"" > $XKBD_CONF
 	echo "	Identifier \"system-keyboard\"" >> $XKBD_CONF
 	echo "	MatchIsKeyboard \"on\"" >> $XKBD_CONF
@@ -328,7 +334,7 @@ prompt_all() {
 
 	[ -f keyboard-map.csv ] || curl -sL "$KEYBOARD_MAP" -o keyboard-map.csv
 	echo "Choose keyboard layout:"
-	KBD_LAYOUT="$(awk -F: '{print $1}' keyboard-map.csv | fzf --layout=reverse --height=20)"
+	KBD_LAYOUT="$(awk -F, '{print $1}' keyboard-map.csv | fzf --layout=reverse --height=20)"
 
 	ask_password root
 	ROOT_PASSWORD="$USER_PASSWORD"
@@ -346,8 +352,6 @@ post_install() {
 	curl -sL "$POST_INSTALL_SCRIPT" -o post-install.sh
 	mv post-install.sh /mnt/root
 	chmod +x /mnt/root/post-install.sh
-	echo -n "Ready for post-install script. Press any key to continue..."
-	read dummy
 	print_phase "Post installation"
 	right_chroot /mnt /root/post-install.sh -nu "$PERSONAL_USER"
 }
