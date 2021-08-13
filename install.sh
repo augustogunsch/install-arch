@@ -68,8 +68,7 @@ echo -e "$AVAILABLE_PLATFORMS"
 DISTRO=$(cat /etc/os-release | sed -nE 's/^ID=(.*)/\1/p')
 INIT_SYS=$(basename $(readlink /bin/init))
 set +e
-ultra_quiet ls /sys/firmware/efi/efivars
-[ $? -eq 0 ] && UEFI=1 || UEFI=0
+[ -d /sys/firmware/efi ] && UEFI=1 || UEFI=0
 set -e
 readonly DISTRO
 readonly INIT_SYS
@@ -241,7 +240,8 @@ set_locale() {
 	echo "KEYMAP=$KBD_LAYOUT" > /mnt/etc/vconsole.conf
 
 	# while openrc and others may read from here
-	echo "keymap=\"$XKBD_LAYOUT\"" > /mnt/etc/conf.d/keymaps
+	KBD_LAYOUT_FULL_PATH=$(find /usr/share/kbd/keymaps -name "$KBD_LAYOUT.map.gz")
+	echo "keymap=\"$KBD_LAYOUT_FULL_PATH\"" > /mnt/etc/conf.d/keymaps
 
 	# and X11 will read from here
 	local XKBD_CONF="/mnt/etc/X11/xorg.conf.d/00-keyboard.conf"
