@@ -15,7 +15,7 @@ PAC,fzf,Fuzzy finder
 PAC,gcc,C compiler
 PAC,gdb,C debugger
 PAC,gvim,Text editor
-AUR,htop-vim,System monitor
+PAC,htop,System monitor
 PAC,libnotify,Implementation of the Desktop Notifications Specification
 PAC,libxinerama,X11 extension which provides support for extending a desktop across multiple displays
 PAC,lxsession,Graphical authentication agent
