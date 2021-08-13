@@ -570,8 +570,12 @@ install_packages() {
 	quiet pacman -Sqyu --noconfirm
 	echo "done"
 
-	install sudo
+	# essential packages
+	# these should be installed before as they are needed to build other packages
+	install sudo "Tool for running a command as other user"
 	install git "Version control system"
+	install go "Go compiler"
+	install gcc "C compiler"
 
 	install_loop
 }

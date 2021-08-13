@@ -235,13 +235,15 @@ set_locale() {
 	echo "done"
 
 	echo -n "Setting keyboard layout..."
-
 	IFS=, read -r dummy XKBD_LAYOUT XKBD_MODEL XKBD_VARIANT XKBD_OPTIONS <<< "$(grep "^$KBD_LAYOUT," -m1 keyboard-map.csv)"
 
+	# systemd and others may read from here
 	echo "KEYMAP=$KBD_LAYOUT" > /mnt/etc/vconsole.conf
 
+	# while openrc and others may read from here
 	echo "keymap=\"$XKBD_LAYOUT\"" > /mnt/etc/conf.d/keymaps
 
+	# and X11 will read from here
 	local XKBD_CONF="/mnt/etc/X11/xorg.conf.d/00-keyboard.conf"
 	mkdir -p $(dirname $XKBD_CONF)
 	echo "Section \"InputClass\"" > $XKBD_CONF
