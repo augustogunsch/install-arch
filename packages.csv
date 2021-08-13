@@ -37,6 +37,7 @@ PAC,unzip,ZIP file extractor
 PAC,xdotool,Utility for automating X11 tasks
 PAC,xorg-server,X11 server
 PAC,xorg-xinit,X11 starter
+PAC,xorg-xrandr,X11 utility to set screen resolution
 PAC,xorg-xsetroot,X11 utility to set wallpapers
 AUR,yay,AUR helper
 PAC,zathura,PDF viewer with vi-styled keybindings
