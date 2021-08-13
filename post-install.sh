@@ -605,6 +605,10 @@ cleanup() {
 	rm packages.csv
 	rm post-install.sh
 	echo "done"
+
+	echo -n "Setting a+x permission on /root..."
+	chmod a+x /root
+	echo "done"
 }
 
 main() {
