@@ -262,7 +262,8 @@ set_locale() {
 setup_grub() {
 	echo -n "Configuring boot loader..."
 	if [ $UEFI -eq 1 ]; then
-		quiet right_chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=grub
+		quiet right_basestrap /mnt efibootmgr
+		quiet right_chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 	else
 		quiet right_chroot /mnt grub-install --target=i386-pc "$DRIVE_TARGET"
 	fi
