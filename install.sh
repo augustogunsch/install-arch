@@ -228,9 +228,9 @@ set_locale() {
 	sed "s/^#$LOCALE/$LOCALE/" < /mnt/etc/locale.gen  > /etc/locale.gen
 	quiet locale-gen
 	cp -f /usr/lib/locale/locale-archive /mnt/usr/lib/locale/locale-archive
+	cp -f /etc/locale.gec /mnt/etc/locale.gen
 
-	echo "export LANG=\"en_US.UTF-8\"" > /mnt/etc/locale.conf
-	echo "export LC_COLLATE=\"C\"" >> /mnt/etc/locale.conf
+	echo "export LANG=\"$LOCALE\"" > /mnt/etc/locale.conf
 	echo "done"
 
 	echo -n "Setting keyboard layout..."
