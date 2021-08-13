@@ -19,9 +19,11 @@ PAC,libnotify,Implementation of the Desktop Notifications Specification
 PAC,libxinerama,X11 extension which provides support for extending a desktop across multiple displays
 PAC,lxsession,Graphical authentication agent
 PAC,man,Interface to system manuals
+PAC,maxima,Computer algebra system
 PAC,mpv,Media player
 PAC,mupdf,Lightweight PDF viewer
 AUR,nerd-fonts-hack,Monospace font
+PAC,newsboat,RSS feed reader and manager
 PAC,noto-fonts,Collection of standard fonts from Google
 PAC,opendoas,Sudo alternative
 PAC,openssh,Secure shell
