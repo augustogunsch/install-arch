@@ -353,6 +353,7 @@ post_install() {
 	mv post-install.sh /mnt/root
 	chmod +x /mnt/root/post-install.sh
 	print_phase "Post installation"
+	echo "From now on, other script will be run"
 	right_chroot /mnt /root/post-install.sh -nu "$PERSONAL_USER"
 }
 

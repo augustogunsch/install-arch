@@ -21,6 +21,12 @@ quiet() {
 	set -e
 }
 
+ultra_quiet() {
+	local DUMMY
+	DUMMY=$($@ 2>&1 > /dev/null)
+}
+
+
 ### CD TO MY DIR ###
 cd "$(dirname "$0")"
 
@@ -231,8 +237,8 @@ install_skip_missing() {
 		echo -ne "Installing ${LGREEN}$1${NC} ($2)..."
 	fi
 	set +e
-	quiet pacman -Sq --needed --noconfirm $1
-	[ $? -ne 0 ] && echo "Not found: skipping." || echo "done"
+	ultra_quiet pacman -Sq --needed --noconfirm $1
+	[ $? -ne 0 ] && echo "Not found: skipping" || echo "done"
 	set -e
 }
 
