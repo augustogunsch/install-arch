@@ -1,4 +1,10 @@
-Bash scripts for installing Arch/Artix Linux. `install.sh` installs the whole system from scratch and then calls `post-install.sh`. If you prefer, you may install the system manually (or in an existing installation) and run `post-install.sh` alone.
+Bash scripts for installing Arch/Artix Linux. `install.sh` installs the whole system from scratch and then calls `post-install.sh`. If you prefer, you may install the system manually (or in an existing installation) and run `post-install.sh` alone. There is no need to clone the repository, as each script can download missing files.
+
+# Quick install
+```curl https://raw.githubusercontent.com/augustogunsch/install-arch/master/install.sh -o install.sh
+chmod +x install.sh
+./install.sh
+```
 
 # Supported platforms
 ## System
