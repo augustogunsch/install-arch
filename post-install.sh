@@ -183,6 +183,7 @@ print_phase() {
 
 install_aur() {
 	qpushd "$AUR_BUILD_DIR"
+	[ -e "$1" ] && qpopd && return 0
 	quiet sudo -u nobody git clone -q "https://aur.archlinux.org/$1.git" "$1"
 	qpushd "$1"
 
@@ -238,8 +239,14 @@ install_try_aur() {
 	fi
 	set +e
 	ultra_quiet pacman -Sq --needed --noconfirm $1
-	[ $? -ne 0 ] && set -e && echo "not found: will try from AUR" && install_aur $1
-	set -e
+	if [ $? -ne 0 ]; then
+	       	set -e 
+		echo "not found: will try from AUR" 
+		install_aur $1
+	else
+		set -e
+		echo "done"
+	fi
 }
 
 prompt() {
@@ -457,7 +464,7 @@ install_dash() {
 }
 
 repos() {
-	echo "Detected distro $DISTRO Linux. Proceeding with enabling more repositories."
+	echo "Detected distro $DISTRO Linux. Proceeding with enabling more repositories"
 	if [ "$DISTRO" = "artix" ]; then
 		pacman_repo lib32
 		local ARCH_REPOS="$DEFAULT_INCLUDE-arch"
@@ -509,7 +516,6 @@ install_dotfiles() {
 	[ "$INSTAL" = "PACKAGES" ] && return 0
 
 	print_phase "Dotfile installation"
-	install git
 
 	qpushd "$HOME_DIR"
 	install_dotfiles_for "$INSTALL_USER"
@@ -527,6 +533,7 @@ install_dotfiles() {
 install_src() {
 	# source code is stored in /root/builds
 	qpushd "$HOME"
+	[ -e "$1" ] && qpopd && return 0
 	local PKG_NAME="$(basename "$1")"
 	if [ -z "$2" ]; then
 		echo -ne "Installing ${LGREEN}$PKG_NAME${NC} from source..."
@@ -571,8 +578,8 @@ install_packages() {
 
 change_shells() {
 	echo -n "Configuring zsh..."
-	chsh -s /bin/zsh "root"
-	chsh -s /bin/zsh "$INSTALL_USER"
+	quiet chsh -s /bin/zsh "root"
+	quiet chsh -s /bin/zsh "$INSTALL_USER"
 	sed 's/^export PROMPT=.*/export PROMPT='"'"'%B%F{166}[%F{172}%n@%m %F{white}%~%F{166}]$%b%f '"'"'/' < "$HOME/.zshrc" > /tmp/zshrc
 	mv /tmp/zshrc "$HOME/.zshrc"
 	echo "done"

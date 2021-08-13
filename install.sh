@@ -235,14 +235,13 @@ set_locale() {
 	echo "done"
 
 	echo -n "Setting keyboard layout..."
-	echo "KEYMAP=\"$KBD_LAYOUT\"" > /mnt/etc/vconsole.conf
 
-	XKBD="$(awk -F, '$1 ~ /^'$KBD_LAYOUT'$/ {print $0; exit 0}' keyboard-map.csv)"
-	XKBD_LAYOUT="$(echo $XKBD | awk -F, '{print $2}')"
-	XKBD_MODEL="$(echo $XKBD | awk -F, '{print $3}')"
-	XKBD_VARIANT="$(echo $XKBD | awk -F, '{print $4}')"
-	XKBD_OPTIONS="$(echo $XKBD | awk -F, '{print $5}')"
+	IFS=, read -r dummy XKBD_LAYOUT XKBD_MODEL XKBD_VARIANT XKBD_OPTIONS <<< "$(grep "^$KBD_LAYOUT," -m1 keyboard-map.csv)"
+
+	echo "KEYMAP=$KBD_LAYOUT" > /mnt/etc/vconsole.conf
+
 	echo "keymap=\"$XKBD_LAYOUT\"" > /mnt/etc/conf.d/keymaps
+
 	local XKBD_CONF="/mnt/etc/X11/xorg.conf.d/00-keyboard.conf"
 	mkdir -p $(dirname $XKBD_CONF)
 	echo "Section \"InputClass\"" > $XKBD_CONF
@@ -250,9 +249,11 @@ set_locale() {
 	echo "	MatchIsKeyboard \"on\"" >> $XKBD_CONF
 	echo "	Option \"XkbLayout\" \"$XKBD_LAYOUT\"" >> $XKBD_CONF
 	echo "	Option \"XkbModel\" \"$XKBD_MODEL\"" >> $XKBD_CONF
-	[ -n $XKBD_VARIANT ] && echo "	Option \"XkbVariant\" \"$XKBD_VARIANT\"" >> $XKBD_CONF
-	[ -n $XKBD_OPTIONS ] && echo "	Option \"XkbOptions\" \"$XKBD_OPTIONS\"" >> $XKBD_CONF
+	[ -n "$XKBD_VARIANT" ] && echo "	Option \"XkbVariant\" \"$XKBD_VARIANT\"" >> $XKBD_CONF
+	[ -n "$XKBD_OPTIONS" ] && echo "	Option \"XkbOptions\" \"$XKBD_OPTIONS\"" >> $XKBD_CONF
 	echo "EndSection" >> $XKBD_CONF
+	
+	[ "$INIT_SYS" = "openrc-init" ] && quiet right_chroot /mnt rc-update add keymaps boot
 	echo "done"
 }
 
