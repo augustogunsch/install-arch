@@ -19,3 +19,4 @@
 - Automate ALSA configuration
 - Automatically install video cards drivers
 - Configure GTK theme
+- Better configure MIME types
