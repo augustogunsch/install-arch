@@ -606,7 +606,7 @@ cleanup() {
 	rm post-install.sh
 	echo "done"
 
-	echo -n "Setting a+x permission on /root..."
+	echo -n "Adding a+x permission on /root..."
 	chmod a+x /root
 	echo "done"
 }

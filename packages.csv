@@ -12,6 +12,7 @@ PAC,feh,Image viewer
 PAC,firejail,Sandbox program
 PAC,fzf,Fuzzy finder
 PAC,gcc,C compiler
+PAC,gdb,C debugger
 PAC,gvim,Text editor
 AUR,htop-vim,System monitor
 PAC,libnotify,Implementation of the Desktop Notifications Specification
@@ -34,6 +35,7 @@ PAC,thunar,Graphical file manager
 PAC,tmux,Terminal multiplexer
 PAC,unclutter,Program that hides the cursos if idle
 PAC,unzip,ZIP file extractor
+PAC,valgrind,C profiler
 PAC,xdotool,Utility for automating X11 tasks
 PAC,xorg-server,X11 server
 PAC,xorg-xinit,X11 starter
