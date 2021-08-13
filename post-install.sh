@@ -534,7 +534,7 @@ install_dotfiles() {
 install_src() {
 	# source code is stored in /root/builds
 	qpushd "$HOME"
-	[ -e "$1" ] && qpopd && return 0
+	[ -d "$(basename $1)" ] && qpopd && return 0
 	local PKG_NAME="$(basename "$1")"
 	if [ -z "$2" ]; then
 		echo -ne "Installing ${LGREEN}$PKG_NAME${NC} from source..."
