@@ -10,6 +10,7 @@ SRC,https://github.com/augustogunsch/dwm,Tiling window manager
 SRC,https://github.com/augustogunsch/dwm-bar,Dwm status bar
 PAC,feh,Image viewer
 PAC,firejail,Sandbox program
+PAC,ffmpeg,Media library with CLI tool
 PAC,fzf,Fuzzy finder
 PAC,gcc,C compiler
 PAC,gdb,C debugger
