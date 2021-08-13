@@ -24,6 +24,7 @@ PAC,maxima,Computer algebra system
 AUR,mmv,Batch renamer
 PAC,mpv,Media player
 PAC,mupdf,Lightweight PDF viewer
+PAC,neofetch,System info fetcher
 AUR,nerd-fonts-hack,Monospace font
 PAC,newsboat,RSS feed reader and manager
 PAC,noto-fonts,Collection of standard fonts from Google
