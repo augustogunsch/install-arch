@@ -465,7 +465,7 @@ install_dash() {
 }
 
 repos() {
-	echo "Detected distro $DISTRO Linux. Proceeding with enabling more repositories"
+	echo "Detected distro $DISTRO Linux. Proceeding with enabling more repositories."
 	if [ "$DISTRO" = "artix" ]; then
 		pacman_repo lib32
 		local ARCH_REPOS="$DEFAULT_INCLUDE-arch"

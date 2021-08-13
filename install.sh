@@ -378,6 +378,9 @@ main() {
 	post_install
 
 	umount -R /mnt
+	echo "ALSA must be configured manually. You can use 'alsamixer' to configure and then 'alsactl store' to save the changes."
+	echo "Most likely you just have to unmute the Main channel."
+	echo "Graphics drivers must also be installed manually. See Arch Wiki: Xorg#Driver_installation."
 	echo -n "Ready to reboot. Press any key to continue..."
 	read dummy
 	reboot
