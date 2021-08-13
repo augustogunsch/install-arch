@@ -228,7 +228,7 @@ set_locale() {
 	sed "s/^#$LOCALE/$LOCALE/" < /mnt/etc/locale.gen  > /etc/locale.gen
 	quiet locale-gen
 	cp -f /usr/lib/locale/locale-archive /mnt/usr/lib/locale/locale-archive
-	cp -f /etc/locale.gec /mnt/etc/locale.gen
+	cp -f /etc/locale.gen /mnt/etc/locale.gen
 
 	echo "export LANG=\"$LOCALE\"" > /mnt/etc/locale.conf
 	echo "done"
