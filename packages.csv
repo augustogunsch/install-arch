@@ -20,6 +20,7 @@ PAC,man,Interface to system manuals
 PAC,mpv,Media player
 PAC,mupdf,Lightweight PDF viewer
 AUR,nerd-fonts-hack,Monospace font
+PAC,noto-fonts,Collection of standard fonts from Google
 PAC,opendoas,Sudo alternative
 PAC,openssh,Secure shell
 PAC,picom,X11 compositor
