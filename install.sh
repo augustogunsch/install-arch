@@ -332,16 +332,16 @@ prompt_all() {
 	qpushd /usr/share/zoneinfo
 	TIMEZONE="$(fzf --layout=reverse --height=20)"
 	qpopd
-	echo "$TIMEZONE"
+	echo "Choose timezone: $TIMEZONE"
 
 	echo -n "Choose locale:"
 	LOCALE=$(sed '/^#\s/D' < /etc/locale.gen | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
-	echo "$LOCALE"
+	echo "Choose locale: $LOCALE"
 
 	[ -f keyboard-map.csv ] || curl -sL "$KEYBOARD_MAP" -o keyboard-map.csv
 	echo -n "Choose keyboard layout:"
 	KBD_LAYOUT="$(awk -F, '{print $1}' keyboard-map.csv | fzf --layout=reverse --height=20)"
-	echo "$KBD_LAYOUT"
+	echo "Choose keyboard layout: $KBD_LAYOUT"
 
 	ask_password root
 	ROOT_PASSWORD="$USER_PASSWORD"
