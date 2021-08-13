@@ -328,17 +328,20 @@ prompt_all() {
 
 	prompt_drive
 
-	echo "Choose timezone:"
+	echo -n "Choose timezone:"
 	qpushd /usr/share/zoneinfo
 	TIMEZONE="$(fzf --layout=reverse --height=20)"
 	qpopd
+	echo "$TIMEZONE"
 
-	echo "Choose locale:"
+	echo -n "Choose locale:"
 	LOCALE=$(sed '/^#\s/D' < /etc/locale.gen | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
+	echo "$LOCALE"
 
 	[ -f keyboard-map.csv ] || curl -sL "$KEYBOARD_MAP" -o keyboard-map.csv
-	echo "Choose keyboard layout:"
+	echo -n "Choose keyboard layout:"
 	KBD_LAYOUT="$(awk -F, '{print $1}' keyboard-map.csv | fzf --layout=reverse --height=20)"
+	echo "$KBD_LAYOUT"
 
 	ask_password root
 	ROOT_PASSWORD="$USER_PASSWORD"
