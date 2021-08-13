@@ -11,6 +11,7 @@ SRC,https://github.com/augustogunsch/dwm-bar,Dwm status bar
 PAC,feh,Image viewer
 PAC,firejail,Sandbox program
 PAC,fzf,Fuzzy finder
+PAC,gcc,C compiler
 PAC,gvim,Text editor
 PAC,libnotify,Implementation of the Desktop Notifications Specification
 PAC,libxinerama,X11 extension which provides support for extending a desktop across multiple displays

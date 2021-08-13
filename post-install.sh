@@ -575,8 +575,6 @@ install_packages() {
 	# these should be installed before as they are needed to build other packages
 	install sudo "Tool for running a command as other user"
 	install git "Version control system"
-	install go "Go compiler"
-	install gcc "C compiler"
 
 	install_loop
 }
@@ -585,8 +583,10 @@ change_shells() {
 	echo -n "Configuring zsh..."
 	quiet chsh -s /bin/zsh "root"
 	quiet chsh -s /bin/zsh "$INSTALL_USER"
+	# change root prompt color
 	sed 's/^export PROMPT=.*/export PROMPT='"'"'%B%F{166}[%F{172}%n@%m %F{white}%~%F{166}]$%b%f '"'"'/' < "$HOME/.zshrc" > /tmp/zshrc
-	mv /tmp/zshrc "$HOME/.zshrc"
+	# disable auto startx for root
+	sed -E 's/^(\s*exec\s*startx)/#\1/' < /tmp/zshrc > "$HOME/.zshrc"
 	echo "done"
 }
 
