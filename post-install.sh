@@ -22,7 +22,7 @@ quiet() {
 }
 
 ### CD TO MY DIR ###
-cd "$(basename "$0")"
+cd "$(dirname "$0")"
 
 ### URLs ###
 DOTFILES="https://github.com/augustogunsch/dotfiles"

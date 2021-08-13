@@ -31,12 +31,13 @@ ultra_quiet() {
 [ $(whoami) != "root" ] && echo "Please run as root" && exit 1
 
 ### CD TO MY DIR ###
-cd "$(basename "$0")"
+cd "$(dirname "$0")"
 
 ### URLs ###
 FZF_DOWNLOAD="$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep linux_amd64 | sed -nE 's/^\s*"browser_download_url":\s*"(.*)"\s*$/\1/p')"
 PARTED_DOWNLOAD="https://archlinux.org/packages/extra/x86_64/parted/download"
 POST_INSTALL_SCRIPT="https://raw.githubusercontent.com/augustogunsch/install-arch/master/post-install.sh"
+KEYBOARD_MAP="https://raw.githubusercontent.com/augustogunsch/install-arch/master/keyboard-map.csv"
 
 ### COLORS ###
 RED='\033[0;31m'
@@ -229,13 +230,22 @@ set_locale() {
 	echo "done"
 
 	echo -n "Setting keyboard layout..."
-	echo "keymap=\"$XKBD_LAYOUT\"" > /etc/conf.d/keymaps
 	echo "KEYMAP=\"$KBD_LAYOUT\"" > /etc/vconsole.conf
+
+	XKBD="$(awk -F: '$1 ~ /^'$KBD_LAYOUT'$/ {print $0; exit 0}' keyboard-map.csv)"
+	XKBD_LAYOUT="$(echo $XKBD | awk -F: '{print $2}')"
+	XKBD_MODEL="$(echo $XKBD | awk -F: '{print $3}')"
+	XKBD_VARIANT="$(echo $XKBD | awk -F: '{print $4}')"
+	XKBD_OPTIONS="$(echo $XKBD | awk -F: '{print $5}')"
+	echo "keymap=\"$XKBD_LAYOUT\"" > /etc/conf.d/keymaps
 	local XKBD_CONF="/etc/X11/xorg.conf.d/00-keyboard.conf"
 	echo "Section \"InputClass\"" > $XKBD_CONF
 	echo "	Identifier \"system-keyboard\"" >> $XKBD_CONF
 	echo "	MatchIsKeyboard \"on\"" >> $XKBD_CONF
 	echo "	Option \"XkbLayout\" \"$XKBD_LAYOUT\"" >> $XKBD_CONF
+	echo "	Option \"XkbModel\" \"$XKBD_MODEL\"" >> $XKBD_CONF
+	[ -n $XKBD_VARIANT ] && echo "	Option \"XkbVariant\" \"$XKBD_VARIANT\"" >> $XKBD_CONF
+	[ -n $XKBD_OPTIONS ] && echo "	Option \"XkbOptions\" \"$XKBD_OPTIONS\"" >> $XKBD_CONF
 	echo "EndSection" >> $XKBD_CONF
 	echo "done"
 }
@@ -316,15 +326,9 @@ prompt_all() {
 	echo "Choose locale:"
 	LOCALE=$(sed '/^#\s/D' < /etc/locale.gen | sed '/^#$/D' | sed 's/^#//' | fzf --layout=reverse --height=20)
 
-	qpushd /usr/share/kbd/keymaps
-	local layouts="$(ls -1 **/*.map.gz | sed -E 's/^(.*)\.map\.gz$/\1/')"
-	qpopd
-	echo "Choose console keyboard layout:"
-	KBD_LAYOUT="$(basename $(echo -e "$layouts" | fzf --layout=reverse --height=20))"
-
-	echo "Choose X11 keyboard layout:"
-	XKBD_LAYOUT="$(awk 'BEGIN {toprint=0} $0 ~ /^[[:blank:]]*$/ {toprint=0} $2 ~ /layout/ {toprint=1; next} {if (toprint) {print $1} }' \
-		/usr/share/X11/xkb/rules/base.lst | head -n -1 | fzf --layout=reverse --height=20)"
+	[ -f keyboard-map.csv ] || curl -sL "$KEYBOARD_MAP" -o keyboard-map.csv
+	echo "Choose keyboard layout:"
+	KBD_LAYOUT="$(awk -F: '{print $1}' keyboard-map.csv | fzf --layout=reverse --height=20)"
 
 	ask_password root
 	ROOT_PASSWORD="$USER_PASSWORD"
