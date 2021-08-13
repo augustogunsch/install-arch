@@ -597,9 +597,14 @@ aur_build_setup() {
 	echo "done"
 }
 
-aur_build_remove() {
-	echo -n "Removeing temporary build directory..."
+cleanup() {
+	echo -n "Removing temporary build directory..."
 	rm -rf "$AUR_BUILD_DIR"
+	echo "done"
+
+	echo -n "Removing files from script..."
+	rm packages.csv
+	rm post-install.sh
 	echo "done"
 }
 
@@ -609,7 +614,7 @@ main() {
 	install_packages
 	install_dotfiles
 	configure_doas
-	aur_build_remove
+	cleanup
 }
 
 main
