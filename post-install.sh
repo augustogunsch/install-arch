@@ -176,19 +176,20 @@ print_phase() {
 }
 
 install_aur() {
-	if [ -z "$2" ]; then
-		echo -ne "Installing ${LGREEN}$1${NC} from AUR..."
-	else
-		echo -ne "Installing ${LGREEN}$1${NC} from AUR ($2)..."
-	fi
 	qpushd "$AUR_BUILD_DIR"
 	quiet sudo -u nobody git clone -q "https://aur.archlinux.org/$1.git" "$1"
 	qpushd "$1"
 
 	#dependencies
 	for pkg in $(sudo -u nobody makepkg --printsrcinfo | awk '$1 ~ /depends/ {print $3}'); do
-		install $pkg
+		install_skip_missing $pkg
 	done
+
+	if [ -z "$2" ]; then
+		echo -ne "Installing ${LGREEN}$1${NC} from AUR..."
+	else
+		echo -ne "Installing ${LGREEN}$1${NC} from AUR ($2)..."
+	fi
 
 	quiet sudo -u nobody makepkg --noconfirm
 	quiet pacman -U --noconfirm $1*.pkg.tar*
@@ -221,6 +222,18 @@ install() {
 	fi
 	set -e
 	echo "done"
+}
+
+install_skip_missing() {
+	if [ -z "$2" ]; then
+		echo -ne "Installing ${LGREEN}$1${NC}..."
+	else
+		echo -ne "Installing ${LGREEN}$1${NC} ($2)..."
+	fi
+	set +e
+	quiet pacman -Sq --needed --noconfirm $1
+	[ $? -ne 0 ] && echo "Not found: skipping." || echo "done"
+	set -e
 }
 
 prompt() {
