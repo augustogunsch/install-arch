@@ -188,7 +188,7 @@ install_aur() {
 
 	#dependencies
 	for pkg in $(sudo -u nobody makepkg --printsrcinfo | awk '$1 ~ /depends/ {print $3}'); do
-		install_skip_missing $pkg
+		install_try_aur $pkg
 	done
 
 	if [ -z "$2" ]; then
@@ -230,7 +230,7 @@ install() {
 	echo "done"
 }
 
-install_skip_missing() {
+install_try_aur() {
 	if [ -z "$2" ]; then
 		echo -ne "Installing ${LGREEN}$1${NC}..."
 	else
@@ -238,7 +238,7 @@ install_skip_missing() {
 	fi
 	set +e
 	ultra_quiet pacman -Sq --needed --noconfirm $1
-	[ $? -ne 0 ] && echo "Not found: skipping" || echo "done"
+	[ $? -ne 0 ] && set -e && echo "not found: will try from AUR" && install_aur $1
 	set -e
 }
 
@@ -546,7 +546,7 @@ install_loop() {
 	[ -f "packages.csv" ] || curl -sL "$PACKAGES_URL" -o "packages.csv"
 	while IFS=, read -r method package description; do
 		case "$method" in
-			"PAC") install "$package" "$description";;
+			"PAC") install_try_aur "$package" "$description";;
 			"AUR") install_aur "$package" "$description";;
 			"SRC") install_src "$package" "$description";;
 			"FUN") $package ;;
