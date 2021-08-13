@@ -20,6 +20,7 @@ PAC,libxinerama,X11 extension which provides support for extending a desktop acr
 PAC,lxsession,Graphical authentication agent
 PAC,man,Interface to system manuals
 PAC,maxima,Computer algebra system
+AUR,mmv,Batch renamer
 PAC,mpv,Media player
 PAC,mupdf,Lightweight PDF viewer
 AUR,nerd-fonts-hack,Monospace font
@@ -44,5 +45,6 @@ PAC,xorg-xinit,X11 starter
 PAC,xorg-xrandr,X11 utility to set screen resolution
 PAC,xorg-xsetroot,X11 utility to set wallpapers
 AUR,yay,AUR helper
+PAC,youtube-dl,Youtube downloader
 PAC,zathura,PDF viewer with vi-styled keybindings
 PAC,zsh,Shell
