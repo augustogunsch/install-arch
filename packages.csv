@@ -2,7 +2,6 @@ PAC,alsa-utils,Utilities for ALSA
 PAC,clang,C compiler
 PAC,cmake,Meta-build system
 PAC,cmus,Terminal music player
-AUR,compiledb,Utility for generating compile_commands.json from Makefile
 FUN,install_dash,
 PAC,dunst,Notification daemon
 SRC,https://github.com/augustogunsch/dmenu,Graphical dynamic menu
@@ -14,7 +13,6 @@ PAC,ffmpeg,Media library with CLI tool
 PAC,fzf,Fuzzy finder
 PAC,gcc,C compiler
 PAC,gdb,C debugger
-PAC,gvim,Text editor
 PAC,htop,System monitor
 PAC,libnotify,Implementation of the Desktop Notifications Specification
 PAC,libxinerama,X11 extension which provides support for extending a desktop across multiple displays
@@ -25,6 +23,7 @@ AUR,mmv,Batch renamer
 PAC,mpv,Media player
 PAC,mupdf,Lightweight PDF viewer
 PAC,neofetch,System info fetcher
+PAC,neovim,Text editor
 AUR,nerd-fonts-hack,Monospace font
 PAC,newsboat,RSS feed reader and manager
 PAC,noto-fonts,Collection of standard fonts from Google

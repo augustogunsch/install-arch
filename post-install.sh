@@ -488,14 +488,14 @@ repos() {
 }
 
 # pwd must be the home dir of the user
-configure_vim_for() {
+configure_nvim_for() {
 	echo -n "Downloading vim-plug for $1..."
-	quiet sudo -u "$1" curl -sfLo .vim/autoload/plug.vim --create-dirs \
-	    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+	quiet sudo -u "$1" curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
+		://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 	echo "done"
 
-	echo -n "Installing vim plugins for $1..."
-	quiet sudo -u "$1" vim -E -c PlugInstall -c qall
+	echo -n "Installing neovim plugins for $1..."
+	quiet sudo -u "$1" nvim -E -c PlugInstall -c qall
 	echo "done"
 }
 
@@ -519,12 +519,12 @@ install_dotfiles() {
 
 	qpushd "$HOME_DIR"
 	install_dotfiles_for "$INSTALL_USER"
-	configure_vim_for "$INSTALL_USER"
+	configure_nvim_for "$INSTALL_USER"
 	qpopd
 
 	qpushd "$HOME"
 	install_dotfiles_for "root"
-	configure_vim_for "root"
+	configure_nvim_for "root"
 	qpopd
 
 	change_shells
