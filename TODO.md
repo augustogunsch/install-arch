@@ -18,5 +18,5 @@
 # More automation
 - Automate ALSA configuration
 - Automatically install video cards drivers
-- Configure GTK theme
+- Configure GTK and icon theme theme
 - Better configure MIME types
