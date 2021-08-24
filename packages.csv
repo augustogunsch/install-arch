@@ -1,4 +1,5 @@
 PAC,alsa-utils,Utilities for ALSA
+PAC,breeze-icons,Icon set
 PAC,clang,C compiler
 PAC,cmake,Meta-build system
 PAC,cmus,Terminal music player
@@ -19,6 +20,7 @@ PAC,libxinerama,X11 extension which provides support for extending a desktop acr
 PAC,lxsession,Graphical authentication agent
 PAC,man,Interface to system manuals
 PAC,maxima,Computer algebra system
+AUR,midnight-gtk-theme-git,GTK theme
 AUR,mmv,Batch renamer
 PAC,mpv,Media player
 PAC,mupdf,Lightweight PDF viewer
