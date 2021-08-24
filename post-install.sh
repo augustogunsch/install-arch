@@ -490,12 +490,14 @@ repos() {
 # pwd must be the home dir of the user
 configure_nvim_for() {
 	echo -n "Downloading vim-plug for $1..."
-	quiet sudo -u "$1" curl -fLo "${XDG_DATA_HOME:-$HOME/.local/share}"/nvim/site/autoload/plug.vim --create-dirs \
+	quiet sudo -u "$1" curl -fsLo .local/share/nvim/site/autoload/plug.vim --create-dirs \
 		https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 	echo "done"
 
 	echo -n "Installing neovim plugins for $1..."
-	quiet sudo -u "$1" nvim -E -c PlugInstall -c qall
+	set +e
+	ultra_quiet sudo -u "$1" nvim -E -c PlugInstall -c qall
+	set -e
 	echo "done"
 }
 
