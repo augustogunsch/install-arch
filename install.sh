@@ -244,6 +244,7 @@ set_locale() {
 
 	# while openrc and others may read from here
 	KBD_LAYOUT_FULL_PATH=$(find /usr/share/kbd/keymaps -name "$KBD_LAYOUT.map.gz")
+	mkdir -p /mnt/etc/conf.d
 	echo "keymap=\"$KBD_LAYOUT_FULL_PATH\"" > /mnt/etc/conf.d/keymaps
 
 	# and X11 will read from here
