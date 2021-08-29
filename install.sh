@@ -210,7 +210,9 @@ install_base() {
 			exit 1
 		fi
 	elif [ "$DISTRO" != "arch" ]; then
+		echo
 		echo "Error: Unsupported distro \"$DISTRO\""
+		exit 1
 	fi
 
 	echo -n "Generating fstab..."
