@@ -168,7 +168,7 @@ if [ $NO_CONFIRM -eq 0 ]; then
 	echo -n "Proceed with installation? [y/N] "
 	read ans
 	case $ans in
-		y|Y) break ;;
+		y|Y) ;;
 		*) exit 0 ;;
 	esac
 fi
