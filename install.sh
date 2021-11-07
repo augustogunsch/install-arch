@@ -153,11 +153,17 @@ partition() {
 	[ -f /bin/parted ] || download_parted
 
 	local rootN
+	[ $UEFI -eq 0 ] && rootN=2 || rootN=3
 
 	echo -n "Partitioning drive..."
+
+	echo -n "Configuring ROOT partition..."
+	quiet mkfs.ext4 -L ROOT "$DRIVE_TARGET"$rootN
+	quiet mount "$DRIVE_TARGET"$rootN /mnt
+	echo "done"
+
 	if [ $UEFI -eq 0 ]; then
 	# Legacy
-		rootN=2
 		parted --script "$DRIVE_TARGET" \
 		mklabel msdos \
 		mkpart primary linux-swap 0% 4GiB \
@@ -165,7 +171,6 @@ partition() {
 		echo "done"
 	else
 	# EFI
-		rootN=3
 		parted --script "$DRIVE_TARGET" \
 		mklabel gpt \
 		mkpart swap linux-swap 0% 4GiB \
@@ -177,19 +182,14 @@ partition() {
 		echo -n "Configuring BOOT partition..."
 		quiet mkfs.fat -F 32 "$DRIVE_TARGET"2
 		fatlabel "$DRIVE_TARGET"2 BOOT
-		mkdir /mnt/boot
-		mount "$DRIVE_TARGET"2 /mnt/boot
+		mkdir -p /mnt/boot
+		quiet mount "$DRIVE_TARGET"2 /mnt/boot
 		echo "done"
 	fi
 
 	echo -n "Configuring SWAP partition..."
 	quiet mkswap -L SWAP "$DRIVE_TARGET"1
 	quiet swapon "$DRIVE_TARGET"1
-	echo "done"
-
-	echo -n "Configuring ROOT partition..."
-	quiet mkfs.ext4 -L ROOT "$DRIVE_TARGET"$rootN
-	quiet mount "$DRIVE_TARGET"$rootN /mnt
 	echo "done"
 }
 
