@@ -188,7 +188,7 @@ partition() {
 	echo -n "Configuring ROOT partition..."
 	quiet mkfs.ext4 -L ROOT "$DRIVE_TARGET"$rootN
 	quiet mount "$DRIVE_TARGET"$rootN /mnt
-	[ $UEFI -ne 1 ] && mkdir -p /mnt/boot && quiet mount "$DRIVE_TARGET"2 /mnt/boot
+	[ $UEFI -eq 1 ] && mkdir -p /mnt/boot && quiet mount "$DRIVE_TARGET"2 /mnt/boot
 	echo "done"
 }
 
