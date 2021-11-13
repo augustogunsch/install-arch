@@ -32,6 +32,7 @@ cd "$(dirname "$0")"
 
 ### URLs ###
 DOTFILES="https://github.com/augustogunsch/dotfiles"
+DOTFILES="https://github.com/augustogunsch/vim-plugin-config"
 PACKAGES_URL="https://raw.githubusercontent.com/augustogunsch/install-arch/master/packages.csv"
 
 ### COLORS ###
@@ -508,16 +509,26 @@ configure_nvim_for() {
 	ultra_quiet sudo -u "$1" nvim -E -c PlugInstall -c qall
 	set -e
 	echo "done"
+
+	echo -n "Downloading neovim plugins configuration (~/.vim-plugin-config)..."
+	quiet sudo -u "$1" git clone "$VIM_PLUGIN_CFG" ./.vim-plugin-config
+	echo "done"
+
+	echo -n "Linking neovim plugins configuration..."
+	qpushd ./.vim-plugin-config
+	quiet sudo -u "$1" ./install.sh
+	echo "done"
+	qpopd
 }
 
 # pwd must be the home dir of the user
 install_dotfiles_for() {
-	echo -n "Downloading dotfiles for $1 (~/dotfiles)..."
-	quiet sudo -u "$1" git clone "$DOTFILES" ./dotfiles
+	echo -n "Downloading dotfiles for $1 (~/.dotfiles)..."
+	quiet sudo -u "$1" git clone "$DOTFILES" ./.dotfiles
 	echo "done"
 
 	echo -n "Linking dotfiles..."
-	qpushd "./dotfiles"
+	qpushd ./.dotfiles
 	quiet sudo -u "$1" ./install.sh
 	echo "done"
 	qpopd
