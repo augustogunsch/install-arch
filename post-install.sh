@@ -462,6 +462,7 @@ configure_doas() {
 		append_line $DOAS_CONF "permit persist $DOAS_USER as root"
 		append_line $DOAS_CONF "permit nopass $DOAS_USER as root cmd pacman args -Syu"
 		append_line $DOAS_CONF "permit nopass $DOAS_USER as root cmd pacman args -Syyu"
+		append_line $DOAS_CONF "permit nopass root"
 	fi
 }
 
