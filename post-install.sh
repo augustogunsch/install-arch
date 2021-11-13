@@ -32,7 +32,7 @@ cd "$(dirname "$0")"
 
 ### URLs ###
 DOTFILES="https://github.com/augustogunsch/dotfiles"
-DOTFILES="https://github.com/augustogunsch/vim-plugin-config"
+VIM_PLUGIN_CFG="https://github.com/augustogunsch/vim-plugin-config"
 PACKAGES_URL="https://raw.githubusercontent.com/augustogunsch/install-arch/master/packages.csv"
 
 ### COLORS ###
